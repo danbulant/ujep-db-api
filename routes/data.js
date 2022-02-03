@@ -42,12 +42,15 @@ router.post('/add', function(req, res, next)
 		});
 
 		var add = Model({
-			autor: req.body.autor, nazev: req.body.nazev, rok: req.body.rok, nakladatel: req.body.nakladatel,
-			mistoVydani: req.body.mistoVydani, signatura: req.body.signatura, ISXN: req.body.isxn, id: ids
+			autor: req.body.autor, nazev: req.body.nazev, rok: req.body.rok && parseInt(req.body.rok), nakladatel: req.body.nakladatel,
+			mistoVydani: req.body.mistoVydani, signatura: req.body.signatura, ISXN: parseInt(req.body.isxn) || null, id: ids
 		});
 
 		add.save(function(err, doc) {
-			if (err) return res.send(406);
+			if (err) {
+				console.error(err);
+				return res.send(406);
+			}
 			res.sendStatus(200);
 		});
 	}

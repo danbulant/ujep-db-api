@@ -1,5 +1,6 @@
 import requests
 import xlrd
+import os
 
 wb = xlrd.open_workbook("data.xls")
 sheet = wb.sheet_by_index(0)
@@ -18,7 +19,11 @@ for i in range(3, 34):
     isxn = data[6]
     id = data[7]
 
-    r = requests.post("http://localhost:3000/test/add", json={"autor": autor, "nazev": nazev, "rok": rok, "nakladatel": nakladatel, "mistoVydani": mistoVydani, "signatura": signatura, "isxn": isxn, "id": id}, headers={'Content-type': 'application/json'})
+    r = requests.post(
+        "http://localhost:{}/data/add".format(os.getenv("PORT") or 3001),
+        json={"autor": autor, "nazev": nazev, "rok": rok, "nakladatel": nakladatel, "mistoVydani": mistoVydani, "signatura": signatura, "isxn": isxn, "id": id},
+        headers={"Content-type": 'application/json'}
+    )
     print(r.status_code)
 
     #print(data[7])
