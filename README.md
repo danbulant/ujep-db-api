@@ -36,18 +36,13 @@
  
 * **Error Response:**
 
-  * **Code:** 418 I'm a teapot <br />
+  * **Code:** 400 Invalid request <br />
     **Content:** `{ }`
-
-  OR
-
-  * **Code:** 406 Not Acceptable <br />
-    **Content:** `{ rok: "2007" }`
 
 * **Sample Call:**
 
   ```
-  curl -X POST http://localhost:3000/data/add
+  curl -X POST http://localhost:3001/data/add
    -H 'Content-Type: application/json'
    -d '{autor: "Semotanová, Eva", nazev: "Česko : Ottův historický atlas", rok: 2007, nakladatel: "Ottovo", mistoVydani: "Praha", signatura: "IN191196", "isxn": 9788073605775, id: "K.II.2.14, K.II.2.15"}'
   ```
@@ -60,17 +55,11 @@
 
 * **Method:**
 
-  `POST` 
-  
-*  **URL Params**
-
-   **Required:**
- 
-   `id=[string]`
+  `GET`
 
 * **Data Params**
 
-  `id = N, N = A->K`
+  `kategorie=A123`
 
 * **Success Response:**
 
@@ -79,24 +68,18 @@
  
 * **Error Response:**
 
-  * **Code:** 418 I'm a teapot <br />
+  * **Code:** 400 Invalid request <br />
     **Content:** `{ }`
-
-  OR
-
-  * **Code:** 404 Not Found <br />
-    **Content:** `{ id: "P" }`
 
 * **Sample Call:**
 
   ```
-  curl -X POST http://localhost:3000/data/fetch
+  curl -X POST http://localhost:3001/data/fetch
    -H 'Content-Type: application/json'
    -d '{id: "A"}'
   ```
   
 * **Notes:**
 
-  Dokumentace je aktuální k datu 13.1. 2022
+  Dokumentace je aktuální k datu 10. 2. 2022
   
- 
