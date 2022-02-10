@@ -4,6 +4,7 @@
 ### Spuštění serveru
 `.env` se automaticky načte do env proměnných. Server pracuje s následujícím:
 - `MONGODB` URI pro připojení k MongoDB.
+- `PORT` lze použít na změnu portu na kterým bude server běžet.
 
 ### Přidání pomůcky do databáze
 
@@ -47,11 +48,11 @@
    -d '{autor: "Semotanová, Eva", nazev: "Česko : Ottův historický atlas", rok: 2007, nakladatel: "Ottovo", mistoVydani: "Praha", signatura: "IN191196", "isxn": 9788073605775, id: "K.II.2.14, K.II.2.15"}'
   ```
 
-### Získání pomůcky z databáze
+### Vyhledávání pomůcek z databáze
 
  * **URL**
 
-    /data/fetch
+    /data/search
 
 * **Method:**
 
