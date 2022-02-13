@@ -169,9 +169,6 @@ router.get("/searchOptions", async (req, res, next) => {
  */
 router.get('/search', (req, res, next) => {
 	const query = {};
-	if (typeof req.query.kategorie === "string" && /^[A-K]/.test(req.query.kategorie)) {
-		query.id = { $regex: "^" + req.query.kategorie };
-	}
 	if (typeof req.query.nazev === "string") {
 		query.nazev = {
 			$text: {
@@ -180,15 +177,25 @@ router.get('/search', (req, res, next) => {
 			}
 		};
 	}
-	if (Array.isArray(req.query.rok) && req.query.rok.every(t => typeof t === "number")) {
+	if (Array.isArray(req.query.id) && req.query.id.every(t => typeof t === "string")) {
+		query.id = { $in: req.query.id };
+	}
+	if (Array.isArray(req.query.rok) && req.query.rok.every(t => !isNaN(parseInt(t)))) {
 		query.rok = { $in: req.query.rok };
 	}
 	if (Array.isArray(req.query.nakladatel) && req.query.nakladatel.every(t => typeof t === "string")) {
 		query.nakladatel = { $in: req.query.nakladatel };
 	}
-	if (Object.keys(query).length === 0) {
-		return next(createError(400));
+	if (Array.isArray(req.query.autor) && req.query.autor.every(t => typeof t === "string")) {
+		query.autor = { $in: req.query.autor };
 	}
+	if (Array.isArray(req.query.mistoVydani) && req.query.mistoVydani.every(t => typeof t === "string")) {
+		query.mistoVydani = { $in: req.query.mistoVydani };
+	}
+	if (Object.keys(query).length === 0) {
+		// return next(createError(400));
+	}
+	console.log(query);
 	Model.find(query, function (err, docs) {
 		if (err) {
 			console.error(err);
