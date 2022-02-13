@@ -3,6 +3,7 @@ const createError = require('http-errors');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const cors = require('cors')
 
 const indexRouter = require('./routes/index');
 const dataRouter = require('./routes/data');
@@ -17,6 +18,7 @@ mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
 
 var app = express();
 
+app.use(cors());
 app.use(require('./routes'));
 
 app.use(logger('dev'));
