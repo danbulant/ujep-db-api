@@ -4,22 +4,23 @@
  * Module dependencies.
  */
 
-var app = require('../app');
-var debug = require('debug')('ujep2:server');
-var http = require('http');
+import app, { set } from '../app';
+import dbg from "debug";
+import { createServer } from 'http';
+var debug = dbg('ujep2:server');
 
 /**
  * Get port from environment and store in Express.
  */
 
 var port = normalizePort(process.env.PORT || '3001');
-app.set('port', port);
+set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+var server = createServer(app);
 
 /**
  * Listen on provided port, on all network interfaces.

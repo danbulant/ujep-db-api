@@ -1,14 +1,12 @@
-require('dotenv').config();
-const createError = require('http-errors');
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const cors = require('cors')
-
-const indexRouter = require('./routes/index');
-const dataRouter = require('./routes/data');
-
-const mongoose = require('mongoose');
+import "dotenv/config";
+import createError from "http-errors";
+import express from "express";
+import cookieParser from "cookie-parser";
+import logger from "morgan";
+import cors from "cors";
+import mongoose from "mongoose";
+import indexRouter from "./routes/index";
+import dataRouter from "./routes/data";
 
 const mongoDB = process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
 
@@ -19,7 +17,7 @@ mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
 var app = express();
 
 app.use(cors());
-app.use(require('./routes'));
+app.use(require('./routes').default);
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -45,4 +43,4 @@ app.use(function(err, req, res, next) {
 	});
 });
 
-module.exports = app;
+export { app };

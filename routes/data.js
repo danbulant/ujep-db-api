@@ -1,12 +1,12 @@
-var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
-const createError = require('http-errors');
+import { Router } from 'express';
+import { urlencoded, json } from 'body-parser';
+import createError from 'http-errors';
 
-var Model = require('../models/pomucka');
+import { Pomucka } from '../models/pomucka';
+var router = Router();
 
-router.use(bodyParser.urlencoded({ extended: false }));
-router.use(bodyParser.json());
+router.use(urlencoded({ extended: false }));
+router.use(json());
 
 /**
  * POST /data/add
@@ -49,7 +49,7 @@ router.post('/add', (req, res, next) => {
 			ids.push(element.replace(/^UNIV[:.] /i, "U").replace(/^UU/i, "U").trim());
 		});
 
-		var add = Model({
+		var add = new Pomucka({
 			autor: req.body.autor.replace(/[, ]*$/, "").trim(),
 			nazev: req.body.nazev.replace(/[,=: ]*$/, "").trim(),
 			rok: req.body.rok && parseInt(req.body.rok),
@@ -89,7 +89,7 @@ router.post('/add', (req, res, next) => {
  * - id - kategorie pomůcky
  */
 router.get("/fetch/:id", (req, res, next) => {
-	Model.find({
+	find({
 		id: req.params.id
 	}, (err, doc) => {
 		if (err) {
@@ -109,35 +109,20 @@ router.get("/fetch/:id", (req, res, next) => {
  * Získá možné hodnoty použitelné pro hledání
  * 
  * @response
- * - autori - seznam autorů pomůcek (string[])
- * - rok - seznam roků ze kterých je nějaká pomůcka (number?[])
- * - nakladatel - seznam nakladatelů (string[])
- * - mistoVydani - seznam míst vydání (string[])
- * - signatura - seznam signatur
  * - id - seznam kategorií
  */
 router.get("/searchOptions", async (req, res, next) => {
 	try {
 		const [
-			autori,
-			roky,
-			nakladatele,
-			mistaVydani,
-			signatury,
 			id
 		] = await Promise.all([
-			Model.distinct("autor"),
-			Model.distinct("rok"),
-			Model.distinct("nakladatel"),
-			Model.distinct("mistoVydani"),
-			Model.distinct("signatura"),
-			Model.distinct("id")
+			Pomucka.distinct("id")
 		]);
 
 		res.setHeader("Cache-Control", "max-age=43200"); // 12 hodin cache
 
 		res.json({
-			autori, roky, nakladatele, mistaVydani, signatury, id
+			id
 		});
 	} catch(e) {
 		next(e);
@@ -150,10 +135,8 @@ router.get("/searchOptions", async (req, res, next) => {
  * Vyhledá v pomůckách
  * 
  * @query
- * - kategorie - regex (^ přidán na začátek) hledání
+ * - id - kategorie pomůcky
  * - nazev - fulltext hledání
- * - rok - seznam čísel roků ve kterých hledat
- * - nakladatel - seznam jmen nakladatelů ve kterých hledat
  * 
  * @response
  * Array výsledků
@@ -180,23 +163,7 @@ router.get('/search', (req, res, next) => {
 	if (Array.isArray(req.query.id) && req.query.id.every(t => typeof t === "string")) {
 		query.id = { $in: req.query.id };
 	}
-	if (Array.isArray(req.query.rok) && req.query.rok.every(t => !isNaN(parseInt(t)))) {
-		query.rok = { $in: req.query.rok };
-	}
-	if (Array.isArray(req.query.nakladatel) && req.query.nakladatel.every(t => typeof t === "string")) {
-		query.nakladatel = { $in: req.query.nakladatel };
-	}
-	if (Array.isArray(req.query.autor) && req.query.autor.every(t => typeof t === "string")) {
-		query.autor = { $in: req.query.autor };
-	}
-	if (Array.isArray(req.query.mistoVydani) && req.query.mistoVydani.every(t => typeof t === "string")) {
-		query.mistoVydani = { $in: req.query.mistoVydani };
-	}
-	if (Object.keys(query).length === 0) {
-		// return next(createError(400));
-	}
-	console.log(query);
-	Model.find(query, function (err, docs) {
+	Pomucka.find(query, function (err, docs) {
 		if (err) {
 			console.error(err);
 			return next(createError(500));
@@ -205,4 +172,4 @@ router.get('/search', (req, res, next) => {
 	});
 });
 
-module.exports = router;
+export default router;

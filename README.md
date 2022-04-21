@@ -1,7 +1,7 @@
 # Dokumentace API pro databázi UJEP
 ----
 
-### Spuštění serveru
+## Spuštění serveru
 `.env` se automaticky načte do env proměnných. Server pracuje s následujícím:
 - `MONGODB` URI pro připojení k MongoDB.
 - `PORT` lze použít na změnu portu na kterým bude server běžet.
@@ -12,81 +12,45 @@ Jak spustit:
 - spusťte server (`npm run dev`)
 - naimportujte data (pouze jednou, není kontrola duplikátů) pomocí `python fill.py`. Server musí běžet aby se data mohli importovat
 
-### Přidání pomůcky do databáze
+## Modely
 
-* **URL**
+### User
 
-  /data/add
+uživatel.
 
-* **Method:**
+- forcePasswordReset znamená že po přihlášení si musí změnit heslo
+- role určuje roli uživatele, a podle toho oprávnění jaká má
 
-  `POST` 
-  
-*  **URL Params**
+#### Role
 
-   **Required:**
- 
-   `nazev=[string]` `id=[string]`
+##### Local manager
 
-   **Optional:**
- 
-   `autor=[string]` `rok=[integer]` `nakladatel=[string]` `mistoVydani=[string]` `signatura=[string]` `isxn=[integer]`
+Umožňuje upravovat a přidávat pomůcky do databáze
 
-* **Data Params**
+##### Local admin
 
-  `{autor: "Semotanová, Eva", nazev: "Česko : Ottův historický atlas", rok: 2007, nakladatel: "Ottovo", mistoVydani: "Praha", signatura: "IN191196", "isxn": 9788073605775, id: "K.II.2.14, K.II.2.15"}`
+Umožňuje spravovat uživatele v rámci objektu
 
-* **Success Response:**
+##### Global manager
 
-  * **Code:** 200 <br />
-    **Content:** `{autor: "Semotanová, Eva", nazev: "Česko : Ottův historický atlas", rok: 2007, nakladatel: "Ottovo", mistoVydani: "Praha", signatura: "IN191196", "isxn": 9788073605775, id: "K.II.2.15"}`
- 
-* **Error Response:**
+Umožňuje upravovat a přidávat pomůcky všude
 
-  * **Code:** 400 Invalid request <br />
-    **Content:** `{ }`
+##### Global admin
 
-* **Sample Call:**
+Umožňuje upravovat všechny uživatele
 
-  ```
-  curl -X POST http://localhost:3001/data/add
-   -H 'Content-Type: application/json'
-   -d '{autor: "Semotanová, Eva", nazev: "Česko : Ottův historický atlas", rok: 2007, nakladatel: "Ottovo", mistoVydani: "Praha", signatura: "IN191196", "isxn": 9788073605775, id: "K.II.2.14, K.II.2.15"}'
-  ```
+### Place
 
-### Vyhledávání pomůcek z databáze
+Objekt (knihovna, škola atd) kde se nachází pomůcky, případně odkud se dají půjčit.
 
- * **URL**
+Mají ve vlastnictví instance pomůcek.
 
-    /data/search
+### Instance
 
-* **Method:**
+Instance pomůcky (když je pomůcka víckrát v ČR, bude více instancí ale jenom jeden záznam v pomůckách).
 
-  `GET`
+Jednotlivý objekty (Place) mají ve vlastnictví instance pomůcek.
 
-* **Data Params**
+### Pomucka
 
-  `kategorie=A123`
-
-* **Success Response:**
-
-  * **Code:** 200 <br />
-    **Content:** `{id: "D"}`
- 
-* **Error Response:**
-
-  * **Code:** 400 Invalid request <br />
-    **Content:** `{ }`
-
-* **Sample Call:**
-
-  ```
-  curl -X POST http://localhost:3001/data/fetch
-   -H 'Content-Type: application/json'
-   -d '{id: "A"}'
-  ```
-  
-* **Notes:**
-
-  Dokumentace je aktuální k datu 10. 2. 2022
-  
+Typ pomůcky (kniha A od autora B), když je dostupná víckrát, bude více instancí.

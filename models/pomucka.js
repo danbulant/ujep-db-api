@@ -1,6 +1,4 @@
-var mongoose = require('mongoose');
-
-var Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 
 var pomuckaSchema = new Schema({
 	autor: String,
@@ -13,4 +11,4 @@ var pomuckaSchema = new Schema({
 	id: [{ type: String, required: true, index: true }]
 });
 
-module.exports = mongoose.model('pomucky', pomuckaSchema, "pomucky");
+export const Pomucka = model('pomucky', pomuckaSchema, "pomucky");
