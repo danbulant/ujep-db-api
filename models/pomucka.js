@@ -8,7 +8,7 @@ var pomuckaSchema = new Schema({
 	mistoVydani: String,
 	signatura: String,
 	ISXN: { type: Number, index: true },
-	id: [{ type: String, required: true, index: true }]
+	kategorie: [{ type: String, required: true, index: true }]
 });
 
 export const Pomucka = model('pomucky', pomuckaSchema, "pomucky");

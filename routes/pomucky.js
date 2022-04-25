@@ -1,20 +1,16 @@
-import { Router } from 'express';
-import { urlencoded, json } from 'body-parser';
+import Router from '@koa/router';
 import createError from 'http-errors';
 
 import { Pomucka } from '../models/pomucka';
-var router = Router();
-
-router.use(urlencoded({ extended: false }));
-router.use(json());
+var router = new Router();
 
 /**
- * POST /data/add
+ * POST /pomucky
  * 
  * Přidá novou pomůcku.
  * 
  * @request
- * - id - string s identifikacemi kategorií, oddělený čárkami
+ * - kategorie - string s identifikacemi kategorií, oddělený čárkami
  * - autor - název autora
  * - nazev - název pomůcky
  * - rok - rok vydání
@@ -32,12 +28,12 @@ router.use(json());
  * - mistoVydani
  * - signatura
  * - ISXN
- * - id - kategorie pomůcky
+ * - kategorie - kategorie pomůcky
  */
-router.post('/add', (req, res, next) => {
+router.post('/', async (ctx) => {
 	if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
 		console.log('Object missing');
-		next(createError(400));
+		throw createError(400);
 	} else {
 		var ids = [];
 
@@ -57,21 +53,15 @@ router.post('/add', (req, res, next) => {
 			mistoVydani: req.body.mistoVydani.replace(/[: ]*$/, "").replace(/[\[\]]/g, "").trim(),
 			signatura: req.body.signatura.replace(/\/$/, "").trim(),
 			ISXN: parseInt(req.body.isxn) || null,
-			id: ids
+			kategorie: ids
 		});
-
-		add.save(function (err, doc) {
-			if (err) {
-				console.error(err);
-				return res.send(500);
-			}
-			res.status(200).json(doc);
-		});
+		await add.save();
+		ctx.body = doc;
 	}
 });
 
 /**
- * GET /data/fetch/:id
+ * GET /pomucky/:id
  * 
  * Zobrazí detaily jedné pomůcky
  * 
@@ -88,55 +78,52 @@ router.post('/add', (req, res, next) => {
  * - ISXN
  * - id - kategorie pomůcky
  */
-router.get("/fetch/:id", (req, res, next) => {
+router.get("/:id", (ctx) => {
 	find({
 		id: req.params.id
 	}, (err, doc) => {
 		if (err) {
 			console.error(err);
-			return next(createError(500));
+			throw createError(500);
 		}
 		if (!doc) {
-			return next(createError(404));
+			throw createError(404);
 		}
-		res.json(doc);
+		ctx.body = doc;
 	});
 });
 
 /**
- * GET /data/searchOptions
+ * GET /pomucky/searchOptions
  * 
  * Získá možné hodnoty použitelné pro hledání
  * 
  * @response
  * - id - seznam kategorií
  */
-router.get("/searchOptions", async (req, res, next) => {
-	try {
-		const [
-			id
-		] = await Promise.all([
-			Pomucka.distinct("id")
-		]);
+router.get("/searchOptions", async (ctx) => {
+	const [
+		id
+	] = await Promise.all([
+		Pomucka.distinct("id")
+	]);
 
-		res.setHeader("Cache-Control", "max-age=43200"); // 12 hodin cache
+	ctx.response.headers["Cache-Control"] = "max-age=43200";
 
-		res.json({
-			id
-		});
-	} catch(e) {
-		next(e);
-	}
+	ctx.body = {
+		id
+	};
 });
 
 /**
- * GET /data/search
+ * GET /pomucky/search
  * 
  * Vyhledá v pomůckách
  * 
  * @query
- * - id - kategorie pomůcky
+ * - id - přesné ID pomůcky
  * - nazev - fulltext hledání
+ * - kategorie - kategorie pomůcky
  * 
  * @response
  * Array výsledků
@@ -150,9 +137,9 @@ router.get("/searchOptions", async (req, res, next) => {
  * - ISXN
  * - id - kategorie pomůcky
  */
-router.get('/search', (req, res, next) => {
+router.get('/search', async (ctx) => {
 	const query = {};
-	if (typeof req.query.nazev === "string") {
+	if (typeof ctx.query.nazev === "string") {
 		query.nazev = {
 			$text: {
 				$search: req.query.nazev,
@@ -160,16 +147,14 @@ router.get('/search', (req, res, next) => {
 			}
 		};
 	}
-	if (Array.isArray(req.query.id) && req.query.id.every(t => typeof t === "string")) {
-		query.id = { $in: req.query.id };
+	if (Array.isArray(ctx.query.kategorie) && ctx.query.kategorie.every(t => typeof t === "string")) {
+		query.kategorie = { $in: ctx.query.kategorie };
 	}
-	Pomucka.find(query, function (err, docs) {
-		if (err) {
-			console.error(err);
-			return next(createError(500));
-		}
-		res.send(docs);
-	});
+	if (Array.isArray(req.query.id) && req.query.id.every(t => typeof t === "string")) {
+		query._id = { $in: req.query.id };
+	}
+	const docs = await Pomucka.find(query);
+	ctx.body = docs;
 });
 
 export default router;

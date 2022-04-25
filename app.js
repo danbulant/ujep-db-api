@@ -1,12 +1,12 @@
 import "dotenv/config";
-import createError from "http-errors";
-import express from "express";
-import cookieParser from "cookie-parser";
-import logger from "morgan";
-import cors from "cors";
+import Koa from "koa";
+import logger from "koa-morgan";
+import cors from "@koa/cors";
+import Router from "@koa/router";
+import bodyParser from "koa-body";
 import mongoose from "mongoose";
 import indexRouter from "./routes/index";
-import dataRouter from "./routes/data";
+import pomuckyRouter from "./routes/pomucky";
 
 const mongoDB = process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
 
@@ -14,33 +14,29 @@ mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 
 mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
 
-var app = express();
+var app = new Koa();
+
+app.use(async (ctx, next) => {
+	try {
+		await next();
+	} catch(e) {
+		ctx.status = e.status || 500;
+		ctx.body = {
+			message: err.message
+		};
+		if(ctx.status === 500) console.error(e);
+	}
+})
 
 app.use(cors());
-app.use(require('./routes').default);
-
 app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(bodyParser());
 
-app.use('/', indexRouter);
-app.use('/data', dataRouter);
+var router = new Router();
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-	next(createError(404));
-});
+router.get("/", indexRouter);
+router.get("/pomucky", pomuckyRouter);
 
-// error handler
-app.use(function(err, req, res, next) {
-	// render the error page
-	res.status(err.status || 500);
-	res.json({
-		// set locals, only providing error in development
-		message: err.message,
-		error: req.app.get('env') === 'development' ? err : {}
-	});
-});
+app.use(router.routes(), router.allowedMethods());
 
 export { app };

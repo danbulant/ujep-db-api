@@ -3,10 +3,12 @@
 
 ## Spuštění serveru
 `.env` se automaticky načte do env proměnných. Server pracuje s následujícím:
+
 - `MONGODB` URI pro připojení k MongoDB.
 - `PORT` lze použít na změnu portu na kterým bude server běžet.
 
 Jak spustit:
+
 - nainstalujte si mongodb (nejlehčeji přes Docker), nebo se registrujte na MongoDB atlas
 - pokud na MongoDB atlas, dejte do `.env` `MONGODB={url}` kde `{url}` je URL od MongoDB atlas. Pro lokální instalaci bez další konfigurace by mělo fungovat `mongodb://localhost/ujep`
 - spusťte server (`npm run dev`)

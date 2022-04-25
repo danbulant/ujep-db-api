@@ -1,11 +1,12 @@
-import { Router } from 'express';
-var router = Router();
+import Router from '@koa/router';
+
+var router = new Router();
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
-    res.json({
-        v: "0.0.0"
-    })
+router.get('/', async (ctx) => {
+    ctx.body = {
+        v: "0.0.1"
+    };
 });
 
 export default router;

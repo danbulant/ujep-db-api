@@ -20,7 +20,7 @@ for i in range(3, 34):
     id = data[7]
 
     r = requests.post(
-        "http://localhost:{}/data/add".format(os.getenv("PORT") or 3001),
+        "http://localhost:{}/pomucky".format(os.getenv("PORT") or 3001),
         json={"autor": autor, "nazev": nazev, "rok": rok, "nakladatel": nakladatel, "mistoVydani": mistoVydani, "signatura": signatura, "isxn": isxn, "id": id},
         headers={"Content-type": 'application/json'}
     )

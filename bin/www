@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import app, { set } from '../app';
+import app from '../app';
 import dbg from "debug";
 import { createServer } from 'http';
 var debug = dbg('ujep2:server');
@@ -14,13 +14,12 @@ var debug = dbg('ujep2:server');
  */
 
 var port = normalizePort(process.env.PORT || '3001');
-set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = createServer(app);
+var server = createServer(app.callback());
 
 /**
  * Listen on provided port, on all network interfaces.
