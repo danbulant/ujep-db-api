@@ -99,19 +99,19 @@ router.get("/:id", (ctx) => {
  * Získá možné hodnoty použitelné pro hledání
  * 
  * @response
- * - id - seznam kategorií
+ * - kategorie - seznam kategorií
  */
 router.get("/searchOptions", async (ctx) => {
 	const [
-		id
+		kategorie
 	] = await Promise.all([
-		Pomucka.distinct("id")
+		Pomucka.distinct("kategorie")
 	]);
 
 	ctx.response.headers["Cache-Control"] = "max-age=43200";
 
 	ctx.body = {
-		id
+		kategorie
 	};
 });
 
@@ -127,7 +127,7 @@ router.get("/searchOptions", async (ctx) => {
  * 
  * @response
  * Array výsledků
- * - _id - přesné ID pomůcky
+ * - id - přesné ID pomůcky
  * - autor - autor pomůcky
  * - nazev
  * - rok
@@ -135,7 +135,7 @@ router.get("/searchOptions", async (ctx) => {
  * - mistoVydani
  * - signatura
  * - ISXN
- * - id - kategorie pomůcky
+ * - kategorie - kategorie pomůcky
  */
 router.get('/search', async (ctx) => {
 	const query = {};
