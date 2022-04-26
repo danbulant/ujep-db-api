@@ -1,8 +1,8 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 import { Place } from './place';
 import { Pomucka } from './pomucka';
 
-var userSchema = new Schema({
+var userSchema = new mongoose.Schema({
     pomucka: Pomucka,
     ownedBy: Place,
     currentlyAt: Place,
@@ -12,4 +12,4 @@ var userSchema = new Schema({
     }
 });
 
-export const User = model('user', userSchema, "user");
+export const User = mongoose.model('user', userSchema, "user");

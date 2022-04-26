@@ -1,7 +1,7 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 import { Place } from './place';
 
-var userSchema = new Schema({
+var userSchema = new mongoose.Schema({
     name: String,
     password: String, //bcrypt hash
     forceChangePassword: {
@@ -21,4 +21,4 @@ export const UserRoles = {
     DEVELOPER: 5
 }
 
-export const User = model('user', userSchema, "user");
+export const User = mongoose.model('user', userSchema, "user");

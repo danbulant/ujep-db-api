@@ -1,7 +1,7 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 
-var placeSchema = new Schema({
+var placeSchema = new mongooes.Schema({
     name: String
 });
 
-export const Place = model('place', placeSchema, "place");
+export const Place = mongoose.model('place', placeSchema, "place");

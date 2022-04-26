@@ -1,6 +1,6 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 
-var pomuckaSchema = new Schema({
+var pomuckaSchema = new mongoose.Schema({
 	autor: String,
 	nazev: { type: String, required: true, index: true },
 	rok: Number,
@@ -11,4 +11,4 @@ var pomuckaSchema = new Schema({
 	kategorie: [{ type: String, required: true, index: true }]
 });
 
-export const Pomucka = model('pomucky', pomuckaSchema, "pomucky");
+export const Pomucka = mongoose.model('pomucky', pomuckaSchema, "pomucky");

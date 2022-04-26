@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
 
-import { Pomucka } from '../models/pomucka';
+import { Pomucka } from '../models/pomucka.js';
 var router = new Router();
 
 /**

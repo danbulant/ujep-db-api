@@ -5,8 +5,8 @@ import cors from "@koa/cors";
 import Router from "@koa/router";
 import bodyParser from "koa-body";
 import mongoose from "mongoose";
-import indexRouter from "./routes/index";
-import pomuckyRouter from "./routes/pomucky";
+import indexRouter from "./routes/index.js";
+import pomuckyRouter from "./routes/pomucky.js";
 
 const mongoDB = process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
 
@@ -34,8 +34,8 @@ app.use(bodyParser());
 
 var router = new Router();
 
-router.get("/", indexRouter);
-router.get("/pomucky", pomuckyRouter);
+router.get("/", indexRouter.routes());
+router.get("/pomucky", pomuckyRouter.routes(), pomuckyRouter.allowedMethods());
 
 app.use(router.routes(), router.allowedMethods());
 
