@@ -30,7 +30,7 @@ var router = new Router();
  * - ISXN
  * - kategorie - kategorie pomůcky
  */
-router.post('/', async (ctx) => {
+router.post('/pomucky', async (ctx) => {
 	if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
 		console.log('Object missing');
 		throw createError(400);
@@ -61,39 +61,6 @@ router.post('/', async (ctx) => {
 });
 
 /**
- * GET /pomucky/:id
- * 
- * Zobrazí detaily jedné pomůcky
- * 
- * @param id - přesné ID (_id) pomůcky
- * 
- * @response
- * - _id - přesné ID pomůcky
- * - autor - autor pomůcky
- * - nazev
- * - rok
- * - nakladatel
- * - mistoVydani
- * - signatura
- * - ISXN
- * - id - kategorie pomůcky
- */
-router.get("/:id", (ctx) => {
-	find({
-		id: req.params.id
-	}, (err, doc) => {
-		if (err) {
-			console.error(err);
-			throw createError(500);
-		}
-		if (!doc) {
-			throw createError(404);
-		}
-		ctx.body = doc;
-	});
-});
-
-/**
  * GET /pomucky/searchOptions
  * 
  * Získá možné hodnoty použitelné pro hledání
@@ -101,7 +68,7 @@ router.get("/:id", (ctx) => {
  * @response
  * - kategorie - seznam kategorií
  */
-router.get("/searchOptions", async (ctx) => {
+router.get("/pomucky/searchOptions", async (ctx) => {
 	const [
 		kategorie
 	] = await Promise.all([
@@ -137,7 +104,7 @@ router.get("/searchOptions", async (ctx) => {
  * - ISXN
  * - kategorie - kategorie pomůcky
  */
-router.get('/search', async (ctx) => {
+router.get('/pomucky/search', async (ctx) => {
 	const query = {};
 	if (typeof ctx.query.nazev === "string") {
 		query.nazev = {
@@ -150,11 +117,44 @@ router.get('/search', async (ctx) => {
 	if (Array.isArray(ctx.query.kategorie) && ctx.query.kategorie.every(t => typeof t === "string")) {
 		query.kategorie = { $in: ctx.query.kategorie };
 	}
-	if (Array.isArray(req.query.id) && req.query.id.every(t => typeof t === "string")) {
-		query._id = { $in: req.query.id };
+	if (Array.isArray(ctx.query.id) && ctx.query.id.every(t => typeof t === "string")) {
+		query._id = { $in: ctx.query.id };
 	}
 	const docs = await Pomucka.find(query);
 	ctx.body = docs;
+});
+
+/**
+ * GET /pomucky/:id
+ * 
+ * Zobrazí detaily jedné pomůcky
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * 
+ * @response
+ * - _id - přesné ID pomůcky
+ * - autor - autor pomůcky
+ * - nazev
+ * - rok
+ * - nakladatel
+ * - mistoVydani
+ * - signatura
+ * - ISXN
+ * - id - kategorie pomůcky
+ */
+router.get("/pomucky/:id", (ctx) => {
+	Pomucka.find({
+		id: req.params.id
+	}, (err, doc) => {
+		if (err) {
+			console.error(err);
+			throw createError(500);
+		}
+		if (!doc) {
+			throw createError(404);
+		}
+		ctx.body = doc;
+	});
 });
 
 export default router;

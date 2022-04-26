@@ -22,7 +22,7 @@ app.use(async (ctx, next) => {
 	} catch(e) {
 		ctx.status = e.status || 500;
 		ctx.body = {
-			message: err.message
+			message: e.message
 		};
 		if(ctx.status === 500) console.error(e);
 	}
@@ -35,8 +35,8 @@ app.use(bodyParser());
 var router = new Router();
 
 router.get("/", indexRouter.routes());
-router.get("/pomucky", pomuckyRouter.routes(), pomuckyRouter.allowedMethods());
 
+app.use(pomuckyRouter.routes(), router.allowedMethods());
 app.use(router.routes(), router.allowedMethods());
 
 export { app };
