@@ -144,7 +144,7 @@ router.get('/pomucky/search', async (ctx) => {
  */
 router.get("/pomucky/:id", (ctx) => {
 	Pomucka.find({
-		id: req.params.id
+		_id: ctx.params.id
 	}, (err, doc) => {
 		if (err) {
 			console.error(err);
