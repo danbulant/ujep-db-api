@@ -9,7 +9,8 @@ var userSchema = new mongoose.Schema({
         default: false
     },
     role: Number,
-    place: Place
+    place: Place,
+    tfa: { type: string, default: null }
 });
 
 export const UserRoles = {

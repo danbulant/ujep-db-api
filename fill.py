@@ -21,7 +21,7 @@ for i in range(3, 34):
 
     r = requests.post(
         "http://localhost:{}/pomucky".format(os.getenv("PORT") or 3001),
-        json={"autor": autor, "nazev": nazev, "rok": rok, "nakladatel": nakladatel, "mistoVydani": mistoVydani, "signatura": signatura, "isxn": isxn, "id": id},
+        json={"author": autor, "name": nazev, "details": { "year": rok, "company": nakladatel, "mistoVydani": mistoVydani }, "signatura": signatura, "isxn": isxn, "kategorie": id},
         headers={"Content-type": 'application/json'}
     )
     print(r.status_code)

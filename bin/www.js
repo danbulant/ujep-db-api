@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import { app } from '../app.js';
+import { app } from '../src/app.js';
 import dbg from "debug";
 import { createServer } from 'http';
 var debug = dbg('ujep2:server');
