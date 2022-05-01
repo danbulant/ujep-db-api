@@ -5,7 +5,7 @@ import { Pomucka } from '../models/pomucka.js';
 var router = new Router();
 
 /**
- * @typedef {Pomucka}
+ * @typedef Pomucka
  * @property {string} _id
  * @property {string} name
  * @property {string} signatura
@@ -58,7 +58,7 @@ router.post('/pomucky', async (ctx) => {
  * Získá možné hodnoty použitelné pro hledání
  * 
  * @response
- * - kategorie - seznam kategorií
+ *  @property {string[]} kategorie - seznam kategorií
  */
 router.get("/pomucky/searchOptions", async (ctx) => {
 	const [
@@ -80,9 +80,9 @@ router.get("/pomucky/searchOptions", async (ctx) => {
  * Vyhledá v pomůckách
  * 
  * @query
- * - id - přesné ID pomůcky
- * - nazev - fulltext hledání
- * - kategorie - kategorie pomůcky
+ *  @property {string} id - přesné ID pomůcky
+ *  @property {string} nazev - fulltext hledání
+ *  @property {string} kategorie - kategorie pomůcky
  * 
  * @response {Pomucka[]}
  */
@@ -140,29 +140,31 @@ router.put("/pomucky/:id", async (ctx) => {
 	});
 	if (!doc) throw createError(404);
 	if (typeof ctx.request.body === "string") throw createError(401);
+	/** @type {Partial<Pomucka>} */
 	const body = ctx.request.body;
-	if (typeof body.autor === "string") {
-		doc.autor = body.autor;
+	if(!doc.details) doc.details = {};
+	if (typeof body.name === "string") {
+		doc.name = body.name;
 	}
-	if (typeof body.nazev === "string") {
-		doc.nazev = body.nazev;
+	if (body.details && typeof body.details.author === "string") {
+		doc.details.author = body.details.author;
 	}
-	if (typeof body.rok === "number") {
-		doc.rok = body.rok;
+	if (body.details && typeof body.details.year === "number") {
+		doc.details.year = body.details.year;
 	}
-	if (typeof body.nakladatel == "string") {
-		doc.nakladatel = body.nakladatel;
+	if (body.details && typeof body.details.company == "string") {
+		doc.details.company = body.details.company;
 	}
-	if (typeof body.mistoVydani == "string") {
-		doc.mistoVydani = body.mistoVydani;
+	if (body.details && typeof body.details.mistoVydani == "string") {
+		doc.details.mistoVydani = body.details.mistoVydani;
 	}
 	if (typeof body.signatura == "string") {
-		doc.mistoVydani = body.mistoVydani;
+		doc.signatura = body.signatura;
 	}
-	if (typeof body.isxn == "string") {
-		doc.isxn = body.isxn;
+	if (typeof body.ISXN == "string") {
+		doc.ISXN = body.ISXN;
 	}
-	if (typeof body.kategorie == "string") {
+	if (Array.isArray(body.kategorie) && body.kategorie.findIndex(t => typeof t !== "string") === -1) {
 		doc.kategorie = body.kategorie;
 	}
 	await doc.save();
