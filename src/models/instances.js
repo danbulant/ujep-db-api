@@ -1,11 +1,20 @@
 import mongoose from 'mongoose';
-import { Place } from './place';
-import { Pomucka } from './pomucka';
+import { Place } from './place.js';
+import { Pomucka } from './pomucka.js';
 
 var instanceSchema = new mongoose.Schema({
-    pomucka: Pomucka,
-    ownedBy: Place,
-    currentlyAt: Place,
+    pomucka: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: Pomucka.collection.name,
+	},
+    ownedBy: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: Place.collection.name,
+	},
+    currentlyAt: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: Place.collection.name,
+	},
     rentedBy: {
         type: {
             name: String,

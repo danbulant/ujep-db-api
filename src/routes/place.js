@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
-import { Place } from '../models/place';
+import { Place } from '../models/place.js';
 
 var router = new Router();
 

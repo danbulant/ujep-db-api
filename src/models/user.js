@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Place } from './place';
+import { Place } from './place.js';
 
 var userSchema = new mongoose.Schema({
     name: String,
@@ -9,8 +9,11 @@ var userSchema = new mongoose.Schema({
         default: false
     },
     role: Number,
-    place: Place,
-    tfa: { type: string, default: null }
+    place: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: Place.collection.name
+    },
+    tfa: { type: String, default: null }
 });
 
 export const UserRoles = {

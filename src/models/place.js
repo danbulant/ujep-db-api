@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-var placeSchema = new mongooes.Schema({
+var placeSchema = new mongoose.Schema({
     name: String,
     description: String,
     website: String,

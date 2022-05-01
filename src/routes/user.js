@@ -2,8 +2,8 @@ import Router from '@koa/router';
 import createError from 'http-errors';
 import bcrypt from 'bcrypt';
 
-import { User, UserRoles } from '../models/user';
-import { privateKey } from '../keys';
+import { User, UserRoles } from '../models/user.js';
+import { privateKey } from '../keys.js';
 
 var router = new Router();
 
