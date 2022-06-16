@@ -1,34 +1,72 @@
 {
-  "name": "ujep-server",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "start": "node ./bin/www.js",
-    "dev": "nodemon ./bin/www.js"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.15"
-  },
-  "dependencies": {
-    "@koa/cors": "^3.3.0",
-    "@koa/router": "^10.1.1",
-    "@types/koa": "^2.13.4",
-    "@types/koa__cors": "^3.3.0",
-    "@types/koa__router": "^8.0.11",
-    "bcrypt": "^5.0.1",
-    "body-parser": "^1.19.1",
-    "cookie-parser": "~1.4.4",
-    "cors": "^2.8.5",
-    "debug": "~2.6.9",
-    "dotenv": "^12.0.4",
-    "ejs": "~2.6.1",
-    "http-errors": "~1.6.3",
-    "jose": "^4.8.0",
-    "koa": "^2.13.4",
-    "koa-body": "^5.0.0",
-    "koa-morgan": "^1.0.1",
-    "mongodb": "^4.3.0",
-    "mongoose": "^6.1.6"
-  }
+    "name": "ujep-server",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "start": "node ./bin/www.js",
+        "dev": "nodemon ./bin/www.js",
+        "test": "cross-env NODE_OPTIONS=--experimental-vm-modules pnpx jest"
+    },
+    "jest": {
+        "moduleFileExtensions": [
+            "js",
+            "jsx",
+            "json",
+            "ts",
+            "tsx"
+        ],
+        "collectCoverage": true,
+        "collectCoverageFrom": [
+            "**/*.js",
+            "!**/node_modules/**",
+            "!**/build/**",
+            "!**/coverage/**"
+        ],
+        "coverageThreshold": {
+            "global": {
+                "branches": 100,
+                "functions": 100,
+                "lines": 100,
+                "statements": 100
+            }
+        },
+        "coverageReporters": [
+            "text",
+            "text-summary"
+        ],
+        "testRegex": "(/test/.*|(\\.|/)(test|spec))\\.jsx?$",
+        "testPathIgnorePatterns": [
+            "/node_modules/",
+            "/build/",
+            "/coverage/"
+        ]
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "jest": "^28.1.1",
+        "nodemon": "^2.0.15",
+        "supertest": "^6.2.3"
+    },
+    "dependencies": {
+        "@koa/cors": "^3.3.0",
+        "@koa/router": "^10.1.1",
+        "@types/koa": "^2.13.4",
+        "@types/koa__cors": "^3.3.0",
+        "@types/koa__router": "^8.0.11",
+        "bcrypt": "^5.0.1",
+        "body-parser": "^1.19.1",
+        "cookie-parser": "~1.4.4",
+        "cors": "^2.8.5",
+        "debug": "~2.6.9",
+        "dotenv": "^12.0.4",
+        "ejs": "~2.6.1",
+        "http-errors": "~1.6.3",
+        "jose": "^4.8.0",
+        "koa": "^2.13.4",
+        "koa-body": "^5.0.0",
+        "koa-morgan": "^1.0.1",
+        "mongodb": "^4.3.0",
+        "mongoose": "^6.1.6"
+    }
 }
