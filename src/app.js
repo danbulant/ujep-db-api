@@ -56,12 +56,17 @@ app.use(bodyParser());
  */
 app.use(async (ctx, next) => {
 	if (ctx.cookies.get("token")) {
-		const { payload, protectedHeader } = await jwtVerify(ctx.cookies.get("token"), publicKey, {
-			issuer: "urn:pomuckydb:issuer",
-			audience: "urn:pomuckydb:audience"
-		});
-		const user = await User.findById(payload.sub, {}, { populate: "place" });
-		if (!user) throw new createError.Forbidden("user_deleted");
+		try {
+			const { payload, protectedHeader } = await jwtVerify(ctx.cookies.get("token"), publicKey, {
+				issuer: "urn:pomuckydb:issuer",
+				audience: "urn:pomuckydb:audience"
+			});
+			var user = await User.findById(payload.sub, {}, { populate: "place" });
+			if (!user) throw new createError.Forbidden("user_deleted");
+		} catch(e) {
+			ctx.cookies.set("token");
+			throw new createError.Forbidden("invalid_token");
+		}
 
 		ctx.state.user = user;
 		ctx.state.role = user.role;
