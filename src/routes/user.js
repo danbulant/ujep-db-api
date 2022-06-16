@@ -5,6 +5,8 @@ import { SignJWT } from "jose";
 
 import { User, UserRoles } from '../models/user.js';
 import { privateKey } from '../keys.js';
+import mongoose from 'mongoose';
+import { Place } from '../models/place.js';
 
 var router = new Router();
 
@@ -88,13 +90,16 @@ router.post("/users", async (ctx) => {
     if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400);
     if (body.place && body.place !== ctx.state.place.id) {
         if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+        if(!mongoose.isValidObjectId(body.place)) throw createError.NotFound("place_not_found");
+        let place = await Place.findById(body.place);
+        if(!place) throw createError.NotFound("place_not_found");
     }
     if (body.role < UserRoles.USER) throw createError(400);
     if (body.role > ctx.state.role) throw createError(403);
     const user = new User({
         name: body.name,
         role: body.role,
-        place: ctx.state.place.id,
+        place: body.place || ctx.state.place.id,
         forceChangePassword: true,
         password: await bcrypt.hash(body.password, 10)
     });
@@ -183,6 +188,7 @@ router.get("/users/@self", async (ctx) => {
  * @response {User}
  */
  router.get("/users/:id", async (ctx) => {
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const user = await User.findById(ctx.params.id, {}, { populate: "place" });

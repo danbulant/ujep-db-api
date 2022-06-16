@@ -1,5 +1,6 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
+import mongoose from 'mongoose';
 
 import { Pomucka } from '../models/pomucka.js';
 var router = new Router();
@@ -116,6 +117,7 @@ router.get('/pomucky/search', async (ctx) => {
  * @response {Pomucka}
  */
 router.get("/pomucky/:id", async (ctx) => {
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
 	const doc = await Pomucka.find({
 		_id: ctx.params.id
 	});
@@ -135,6 +137,7 @@ router.get("/pomucky/:id", async (ctx) => {
  * @response {Pomucka}
  */
 router.put("/pomucky/:id", async (ctx) => {
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
 	const doc = Pomucka.find({
 		_id: ctx.params.id
 	});

@@ -1,5 +1,7 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
+import mongoose from 'mongoose';
+
 import { Place } from '../models/place.js';
 
 var router = new Router();
@@ -56,6 +58,7 @@ router.get("/places", async (ctx) => {
  * @response {Place}
  */
 router.get("/places/:id", async (ctx) => {
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
     const place = await Place.findById(ctx.params.id);
     if (!place) throw createError(404);
     ctx.body = place;
