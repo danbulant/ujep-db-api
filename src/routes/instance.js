@@ -27,6 +27,7 @@ var router = new Router();
  * @response {Instance}
  */
 router.post('/pomucky/:id/instances', async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
     const pomucka = await Pomucka.find({
         _id: ctx.params.id
     });
