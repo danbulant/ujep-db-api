@@ -35,6 +35,7 @@ app.use(async (ctx, next) => {
 				message: e.message
 			};
 		} else {
+			/* istanbul ignore next */
 			ctx.body = {
 				status: ctx.status,
 				message: "internal"
