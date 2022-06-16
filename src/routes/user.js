@@ -1,6 +1,7 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
 import bcrypt from 'bcrypt';
+import { SignJWT } from "jose";
 
 import { User, UserRoles } from '../models/user.js';
 import { privateKey } from '../keys.js';
@@ -40,8 +41,8 @@ router.put("/token", async (ctx) => {
         name: body.name
     }, {}, { populate: "place" });
     if (!user) throw createError(404);
-    if (!await bcrypt.compare(user.password, body.password)) throw createError(404);
-    const jwt = await new jose.SignJWT({ 'sub': user.id })
+    if (!await bcrypt.compare(body.password, user.password)) throw createError(404);
+    const jwt = await new SignJWT({ 'sub': user.id })
         .setProtectedHeader({ alg: 'ES256' })
         .setIssuedAt()
         .setIssuer('urn:pomuckydb:issuer')
@@ -71,6 +72,7 @@ router.put("/token", async (ctx) => {
  * @request
  *  @property {string} name - i když je označeno jako jméno, musí obsahovat zavináč, doporučuje se použít pracovní email. 2 - 256 znaků
  *  @property {string} password - 6 - 72 znaků (momentálně se nekontroluje bezpečnost); BCrypt nepodporuje víc jak 72 znaků (bytes; emoji bude "stát" více; JS length ukazuje správnou hodnotu)
+ *  @property {string} role - role uživatele. Musí být maximálně stejná jako tvořící uživatel.
  *  @property {string} [place] - ID místa, pokud se má uživatel vytvořit pro jiné místo (tvořící uživatel musí mít roli global admin)
  * 
  * @response {User}
@@ -81,6 +83,7 @@ router.post("/users", async (ctx) => {
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);
     if (!body.role || typeof body.role !== "number") throw createError(400);
+    body.role = Math.round(body.role);
     if (!body.name || typeof body.name !== "string" || !body.name.includes("@") || body.name.length < 2 || body.name.length > 256) throw createError(400);
     if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400);
     if (body.place && body.place !== ctx.state.place.id) {
@@ -93,7 +96,7 @@ router.post("/users", async (ctx) => {
         role: body.role,
         place: ctx.state.place.id,
         forceChangePassword: true,
-        password: await bcrypt.hash(body.password)
+        password: await bcrypt.hash(body.password, 10)
     });
     await user.save();
 
