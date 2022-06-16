@@ -117,7 +117,7 @@ router.post("/users", async (ctx) => {
  * 
  * @auth
  * 
- * @request {{ password?: string }}
+ * @request {{ oldPassword?: string, newPassword?: string }}
  * @response {User}
  */
 router.put("/users/@self", async (ctx) => {
@@ -127,10 +127,11 @@ router.put("/users/@self", async (ctx) => {
 
     const user = ctx.state.user;
 
-    if (body.password) {
-        if (typeof body.password !== "string" || body.password.length > 5 && body.password.length < 73) throw createError.BadRequest("invalid_password");
-        if (user.forceChangePassword && await bcrypt.compare(user.password, body.password)) throw createError.BadRequest("password_not_changed");
-        user.password = await bcrypt.hash(body.password);
+    if (body.newPassword) {
+        if (typeof body.newPassword !== "string" || body.newPassword.length < 6 || body.newPassword.length > 72) throw createError.BadRequest("invalid_password");
+        if (user.forceChangePassword && await bcrypt.compare(body.newPassword, user.password)) throw createError.BadRequest("password_not_changed");
+        if (typeof body.oldPassword !== "string" || !await bcrypt.compare(body.oldPassword, user.password)) throw createError.BadRequest("wrong_password");
+        user.password = await bcrypt.hash(body.newPassword, 10);
         user.forceChangePassword = false;
     }
 
@@ -143,7 +144,31 @@ router.put("/users/@self", async (ctx) => {
         role: user.role,
         place: user.place
     };
-})
+});
+
+/**
+ * GET /users/@self
+ * 
+ * Získá informace o přihlášeném uživateli.
+ * 
+ * Pro získání informací o uživateli na jiném místě je potřeba GLOBAL_ADMIN.
+ * 
+ * @auth
+ * 
+ * @response {User}
+ */
+router.get("/users/@self", async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
+    const user = ctx.state.user;
+
+    ctx.body = {
+        _id: user.id,
+        name: user.name,
+        forceChangePassword: user.forceChangePassword,
+        role: user.role,
+        place: user.place
+    };
+});
 
 /**
  * GET /users/:id
@@ -157,7 +182,7 @@ router.put("/users/@self", async (ctx) => {
  * 
  * @response {User}
  */
-router.get("/users/:id", async (ctx) => {
+ router.get("/users/:id", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const user = await User.findById(ctx.params.id, {}, { populate: "place" });

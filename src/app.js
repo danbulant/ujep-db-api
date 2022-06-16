@@ -16,7 +16,7 @@ import userRouter from "./routes/user.js";
 import { User } from "./models/user.js";
 import { publicKey } from "./keys.js";
 
-const mongoDB = process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
+const mongoDB = globalThis.__MONGO_URI__ || process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
 
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 
