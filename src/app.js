@@ -16,18 +16,19 @@ import userRouter from "./routes/user.js";
 import { User } from "./models/user.js";
 import { publicKey } from "./keys.js";
 
-const mongoDB = globalThis.__MONGO_URI__ || process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
-
-mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
-
-mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
+/* istanbul ignore next */
+{
+	const mongoDB = globalThis.__MONGO_URI__ || process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
+	mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });	
+	mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
+}
 
 var app = new Koa();
 
 app.use(async (ctx, next) => {
 	try {
 		await next();
-	} catch (e) {
+	} catch (e) /* istanbul ignore next */ {
 		ctx.status = e.status || 500;
 		if (e.expose) {
 			ctx.body = {
@@ -35,7 +36,6 @@ app.use(async (ctx, next) => {
 				message: e.message
 			};
 		} else {
-			/* istanbul ignore next */
 			ctx.body = {
 				status: ctx.status,
 				message: "internal"
@@ -63,17 +63,17 @@ app.use(async (ctx, next) => {
 				audience: "urn:pomuckydb:audience"
 			});
 			var user = await User.findById(payload.sub, {}, { populate: "place" });
-			if (!user) throw new createError.Forbidden("user_deleted");
 		} catch(e) {
 			ctx.cookies.set("token");
 			throw new createError.Forbidden("invalid_token");
 		}
+		if (!user) throw new createError.Forbidden("user_deleted");
 
 		ctx.state.user = user;
 		ctx.state.role = user.role;
 		ctx.state.place = user.place;
 
-		if (user.forceChangePassword && ctx.method !== "PUT" && ctx.request.path !== "/users/@self") {
+		if (user.forceChangePassword && (ctx.method !== "PUT" || ctx.request.path !== "/users/@self")) {
 			throw new createError.Forbidden("password_change_required");
 		}
 	}
