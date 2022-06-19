@@ -25,28 +25,21 @@ var router = new Router();
  * @response {Pomucka}
  */
 router.post('/pomucky', async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
+    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
-	var ids = [];
 	const body = ctx.request.body;
 
-	body.kategorie.split(/[,; ]+/).forEach(element => {
-		if (element.substr(element.length - 1) == ".") {
-			element = element.slice(0, -1);
-		}
-
-		ids.push(element.replace(/^UNIV[:.] /i, "U").replace(/^UU/i, "U").trim());
-	});
-
 	var add = new Pomucka({
-		name: body.name.replace(/[,=: ]*$/, "").trim(),
+		name: body.name.trim(),
 		signatura: body.signatura.replace(/\/$/, "").trim(),
 		ISXN: parseInt(body.isxn) || null,
-		kategorie: ids,
+		kategorie: body.kategorie,
 		details: {
-			author: body.details.author.replace(/[, ]*$/, "").trim(),
-			year: body.details.year && parseInt(req.body.year),
-			company: body.company.replace(/[, ]*$/, "").trim(),
-			mistoVydani: body.mistoVydani.replace(/[: ]*$/, "").replace(/[\[\]]/g, "").trim(),
+			author: body.details.author.trim(),
+			year: parseInt(req.body.year) || null,
+			company: body.company.trim(),
+			mistoVydani: body.mistoVydani.trim(),
 		}
 	});
 	await add.save();
@@ -81,9 +74,9 @@ router.get("/pomucky/searchOptions", async (ctx) => {
  * Vyhledá v pomůckách
  * 
  * @query
- *  @property {string} id - přesné ID pomůcky
+ *  @property {string[]} id - přesné ID pomůcky
  *  @property {string} nazev - fulltext hledání
- *  @property {string} kategorie - kategorie pomůcky
+ *  @property {string[]} kategorie - kategorie pomůcky
  * 
  * @response {Pomucka[]}
  */
@@ -138,6 +131,8 @@ router.get("/pomucky/:id", async (ctx) => {
  */
 router.put("/pomucky/:id", async (ctx) => {
     if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+    if (!ctx.state.user) throw createError(401);
+    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	const doc = Pomucka.find({
 		_id: ctx.params.id
 	});
