@@ -47,7 +47,7 @@ app.use(async (ctx, next) => {
 
 app.use(cors());
 app.use(logger('dev'));
-app.use(bodyParser());
+app.use(bodyParser({ text: false }));
 
 /**
  * @topic Přihlášení
