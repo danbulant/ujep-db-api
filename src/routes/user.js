@@ -90,7 +90,7 @@ router.post("/users", async (ctx) => {
     if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400);
     if (body.place && body.place !== ctx.state.place.id) {
         if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
-        if(!mongoose.isValidObjectId(body.place)) throw createError.NotFound("place_not_found");
+        if(!mongoose.isValidObjectId(body.place)) throw createError(400);
         let place = await Place.findById(body.place);
         if(!place) throw createError.NotFound("place_not_found");
     }
@@ -188,7 +188,7 @@ router.get("/users/@self", async (ctx) => {
  * @response {User}
  */
  router.get("/users/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const user = await User.findById(ctx.params.id, {}, { populate: "place" });
