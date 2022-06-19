@@ -7,6 +7,7 @@ import { app } from "../app";
 import { Place } from "../models/place";
 import { User } from "../models/user";
 import { privateKey } from "../keys";
+import { Pomucka } from "../models/pomucka";
 
 /** @type {Place} */
 let PLACE;
@@ -494,4 +495,64 @@ test("Getting user info of nonexistent user fails", async () => {
         .get("/users/62af34367cfa9d6970bb8853")
         .set('Cookie', `token=${USER_JWT}`);
     expect(res.statusCode).toBe(404);
+});
+
+
+describe("Pomucky", () => {
+    /** @type {Pomucka} */
+    let pomucka;
+    beforeAll(async () => {
+        pomucka = new Pomucka({
+            name: "test",
+            signatura: "T106",
+            ISXN: 1234,
+            kategorie: "K.II.09",
+            details: {
+                author: "autor",
+                year: 2020,
+                company: "firma",
+                mistoVydani: "misto",
+            }
+        });
+        await pomucka.save();
+    });
+    afterAll(async () => {
+        await pomucka.deleteOne();
+    })
+    test("Getting pomucka by ID", async () => {
+        const res = await request(app.callback())
+            .get(`/pomucky/${pomucka._id}`);
+        expect(res.statusCode).toBe(200);
+    });
+    test("Search options", async () => {
+        const res = await request(app.callback())
+            .get(`/pomucky/searchOptions`);
+        expect(res.statusCode).toBe(200);
+        expect(Array.isArray(res.body.kategorie)).toBe(true);
+        console.log(res.body);
+        expect(res.body.kategorie.includes("K.II.09")).toBe(true);
+    });
+    describe("Search", () => {
+        test("By name", async () => {
+            const res = await request(app.callback())
+                .get(`/pomucky/search?name=${pomucka.name}`);
+            expect(res.statusCode).toBe(200);
+            expect(res.body.length).toBe(1);
+            expect(res.body[0].name).toBe(pomucka.name);
+        });
+        test("By id", async () => {
+            const res = await request(app.callback())
+                .get(`/pomucky/search?id[]=${pomucka._id}`);
+            expect(res.statusCode).toBe(200);
+            expect(res.body.length).toBe(1);
+            expect(res.body[0].name).toBe(pomucka.name);
+        });
+        test("By kategorie", async () => {
+            const res = await request(app.callback())
+                .get(`/pomucky/search?kategorie[]=${pomucka.kategorie}`);
+            expect(res.statusCode).toBe(200);
+            expect(res.body.length).toBe(1);
+            expect(res.body[0].name).toBe(pomucka.name); 
+        });
+    });
 });
