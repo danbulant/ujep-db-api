@@ -45,7 +45,9 @@ app.use(async (ctx, next) => {
 	}
 })
 
-app.use(cors());
+app.use(cors({
+	origin: process.env.ORIGIN || 'http://localhost:3000',
+}));
 app.use(logger('dev'));
 app.use(bodyParser({ text: false }));
 
