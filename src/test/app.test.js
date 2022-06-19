@@ -238,6 +238,39 @@ describe("Developer User operations", () => {
                 });
             expect(res.statusCode).toBe(400);
         });
+        test("Creating user with invalid name fails", async () => {
+            const res = await request(app.callback())
+                .post("/users")
+                .set('Cookie', `token=${USER_JWT}`)
+                .send({
+                    name: "",
+                    password: "newpassword",
+                    role: 1
+                });
+            expect(res.statusCode).toBe(400);
+        });
+        test("Creating user with invalid password fails", async () => {
+            const res = await request(app.callback())
+                .post("/users")
+                .set('Cookie', `token=${USER_JWT}`)
+                .send({
+                    name: "test@example.com",
+                    password: "",
+                    role: 1
+                });
+            expect(res.statusCode).toBe(400);
+        });
+        test("Creating user with invalid (too low) role fails", async () => {
+            const res = await request(app.callback())
+                .post("/users")
+                .set('Cookie', `token=${USER_JWT}`)
+                .send({
+                    name: "test2@example.com",
+                    password: "newpassword",
+                    role: 0
+                });
+            expect(res.statusCode).toBe(400);
+        });
     });
     describe("Creating user in another place", () => {
         let place;
@@ -270,6 +303,30 @@ describe("Developer User operations", () => {
             expect(res.body.role).toBe(1);
             expect(res.body.place).toBe(place.id);
             userId = res.body._id;
+        });
+        test("Creating user in another invalid place fails", async () => {
+            const res = await request(app.callback())
+                .post("/users")
+                .set('Cookie', `token=${USER_JWT}`)
+                .send({
+                    name: "placed2@example.com",
+                    password: "newpassword",
+                    role: 1,
+                    place: "bad"
+                });
+            expect(res.statusCode).toBe(400);
+        });
+        test("Creating user in another nonexistent place fails", async () => {
+            const res = await request(app.callback())
+                .post("/users")
+                .set('Cookie', `token=${USER_JWT}`)
+                .send({
+                    name: "placed3@example.com",
+                    password: "newpassword",
+                    role: 1,
+                    place: "62af3299da7e181b79af017b"
+                });
+            expect(res.statusCode).toBe(404);
         });
     });
 });
@@ -373,4 +430,68 @@ describe("Using LOCAL_ADMIN user", () => {
             });
         expect(res.statusCode).toBe(403);
     });
+});
+
+describe("Invalid body for login fails", () => {
+    test("String instead of JSON", async () => {
+        const res = await request(app.callback())
+            .put("/token")
+            .send("");
+        expect(res.statusCode).toBe(400);
+    });
+    test("Empty body", async () => {
+        const res = await request(app.callback())
+            .put("/token");
+        expect(res.statusCode).toBe(400);
+    });
+    test("Missing username", async () => {
+        const res = await request(app.callback())
+            .put("/token")
+            .send({
+                password: "newpassword"
+            });
+        expect(res.statusCode).toBe(400);
+    });
+    test("Missing password", async () => {
+        const res = await request(app.callback())
+            .put("/token")
+            .send({
+                name: "test"
+            });
+        expect(res.statusCode).toBe(400);
+    });
+    test("Username not found", async () => {
+        const res = await request(app.callback())
+            .put("/token")
+            .send({
+                name: "test",
+                password: "newpassword"
+            });
+        expect(res.statusCode).toBe(404);
+    });
+});
+
+test("Creating user fails when not logged in", async () => {
+    const res = await request(app.callback())
+        .post("/users")
+        .send({
+            name: "test",
+            password: "newpassword",
+            role: 5
+        });
+    expect(res.statusCode).toBe(401);
+});
+
+test("Getting user info of invalid user fails", async () => {
+    const res = await request(app.callback())
+        .get("/users/invalid")
+        .set('Cookie', `token=${USER_JWT}`);
+    expect(res.statusCode).toBe(400);
+});
+
+test("Getting user info of nonexistent user fails", async () => {
+    const res = await request(app.callback())
+        .get("/users/62af34367cfa9d6970bb8853")
+        .set('Cookie', `token=${USER_JWT}`);
+    expect(res.statusCode).toBe(404);
 });
