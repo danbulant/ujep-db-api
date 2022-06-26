@@ -62,6 +62,16 @@ router.put("/token", async (ctx) => {
 });
 
 /**
+ * DELETE /token
+ * 
+ * Odhlásí uživatele
+ */
+router.delete("/token", async (ctx) => {
+    ctx.cookies.set("token");
+    ctx.body = {};
+});
+
+/**
  * POST /users
  * 
  * Registruje uživatele.
