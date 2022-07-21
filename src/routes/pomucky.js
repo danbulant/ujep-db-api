@@ -75,23 +75,21 @@ router.get("/pomucky/searchOptions", async (ctx) => {
  * 
  * @query
  *  @property {string[]} id - přesné ID pomůcky
- *  @property {string} nazev - fulltext hledání
- *  @property {string[]} kategorie - kategorie pomůcky
+ *  @property {string} name - fulltext hledání
+ *  @property {string[]} categories - kategorie pomůcky
  * 
  * @response {Pomucka[]}
  */
 router.get('/pomucky/search', async (ctx) => {
 	const query = {};
-	if (typeof ctx.query.nazev === "string") {
-		query.nazev = {
-			$text: {
-				$search: req.query.nazev,
-				$language: "cs"
-			}
+	if (typeof ctx.query.name === "string") {
+		query.$text = {
+			$search: ctx.query.name,
+			$language: "cs"
 		};
 	}
-	if (Array.isArray(ctx.query.kategorie) && ctx.query.kategorie.every(t => typeof t === "string")) {
-		query.kategorie = { $in: ctx.query.kategorie };
+	if (Array.isArray(ctx.query.categories) && ctx.query.categories.every(t => typeof t === "string")) {
+		query.categories = { $in: ctx.query.categories };
 	}
 	if (Array.isArray(ctx.query.id) && ctx.query.id.every(t => typeof t === "string")) {
 		query._id = { $in: ctx.query.id };
@@ -110,10 +108,8 @@ router.get('/pomucky/search', async (ctx) => {
  * @response {Pomucka}
  */
 router.get("/pomucky/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-	const doc = await Pomucka.find({
-		_id: ctx.params.id
-	});
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+	const doc = await Pomucka.findById(ctx.params.id);
 	if (!doc) throw createError(404);
 	ctx.body = doc;
 });
