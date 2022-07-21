@@ -52,6 +52,20 @@ app.use(cors({
 app.use(logger('dev'));
 app.use(bodyParser({ text: false }));
 
+app.use(async (ctx, next) => {
+	for(const key in ctx.query) {
+		if(key.endsWith("[]")) {
+			if(!Array.isArray(ctx.query[key])) {
+				ctx.query[key.replace(/\[\]$/, "")] = [ctx.query[key]];
+			} else {
+				ctx.query[key.replace(/\[\]$/, "")] = ctx.query[key];
+			}
+			delete ctx.query[key];
+		}
+	}
+	await next();
+});
+
 /**
  * @topic Přihlášení
  * 
