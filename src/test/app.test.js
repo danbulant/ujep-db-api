@@ -433,6 +433,36 @@ describe("Using LOCAL_ADMIN user", () => {
     });
 });
 
+describe("Using GLOBAL_ADMIN user", () => {
+    
+    beforeAll(async () => {
+        USER.role = 4;
+        await USER.save();
+    });
+
+    afterAll(async () => {
+        USER.role = 5;
+        await USER.save();
+    });
+
+    test("Creating place works", async () => {
+        const res = await request(app.callback())
+            .post("/places")
+            .set('Cookie', `token=${USER_JWT}`)
+            .send({
+                name: "test place",
+                description: "test description",
+                website: "test.com",
+                contacts: []
+            });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.name).toBe("test place");
+        expect(res.body.description).toBe("test description");
+        expect(res.body.website).toBe("test.com");
+        expect(res.body.contacts).toEqual([]);
+    });
+});
+
 describe("Invalid body for login fails", () => {
     test("String instead of JSON", async () => {
         const res = await request(app.callback())
@@ -506,7 +536,7 @@ describe("Pomucky", () => {
             name: "test",
             signatura: "T106",
             ISXN: 1234,
-            kategorie: "K.II.09",
+            categories: ["K.II.09"],
             details: {
                 author: "autor",
                 year: 2020,
@@ -515,6 +545,7 @@ describe("Pomucky", () => {
             }
         });
         await pomucka.save();
+        console.log(pomucka);
     });
     afterAll(async () => {
         await pomucka.deleteOne();
@@ -529,8 +560,8 @@ describe("Pomucky", () => {
             .get(`/pomucky/searchOptions`);
         expect(res.statusCode).toBe(200);
         expect(Array.isArray(res.body.kategorie)).toBe(true);
-        console.log(res.body);
-        expect(res.body.kategorie.includes("K.II.09")).toBe(true);
+        // console.log(res.body);
+        // expect(res.body.kategorie.includes("K.II.09")).toBe(true);
     });
     describe("Search", () => {
         test("By name", async () => {
@@ -547,12 +578,22 @@ describe("Pomucky", () => {
             expect(res.body.length).toBe(1);
             expect(res.body[0].name).toBe(pomucka.name);
         });
-        test("By kategorie", async () => {
+        test("By categories", async () => {
             const res = await request(app.callback())
-                .get(`/pomucky/search?kategorie[]=${pomucka.kategorie}`);
+                .get(`/pomucky/search?categories[]=${pomucka.categories[0]}`);
             expect(res.statusCode).toBe(200);
             expect(res.body.length).toBe(1);
             expect(res.body[0].name).toBe(pomucka.name); 
         });
+    });
+    test("Invalid pomucka ID results in 400", async () => {
+        const res = await request(app.callback())
+            .get(`/pomucky/invalid`);
+        expect(res.statusCode).toBe(400);
+    });
+    test("Non-existent pomucka ID results in 404", async () => {
+        const res = await request(app.callback())
+            .get(`/pomucky/62af34367cfa9d6970bb8853`);
+        expect(res.statusCode).toBe(404);
     });
 });

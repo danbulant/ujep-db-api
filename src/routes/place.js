@@ -3,6 +3,7 @@ import createError from 'http-errors';
 import mongoose from 'mongoose';
 
 import { Place } from '../models/place.js';
+import { UserRoles } from '../models/user.js';
 
 var router = new Router();
 
@@ -10,7 +11,8 @@ var router = new Router();
  * @typedef Place
  * @property {string} name
  * @property {string} description
- * @property {{ email: string, phone: string, name: string, description: string }} contacts
+ * @property {string} website
+ * @property {{ email: string, phone?: string, name: string, description: string }} contacts
  */
 
 
@@ -50,6 +52,39 @@ router.get("/places", async (ctx) => {
     const places = await Place.find();
     ctx.body = places;
 });
+
+/**
+ * POST /places
+ * 
+ * Vytvoří nové místo
+ * @auth
+ * @role GLOBAL_ADMIN
+ * @request {Place}
+ * @response {Place}
+ */
+router.post("/places", async (ctx) => {
+    if(!ctx.state.user) throw createError(401);
+    if(ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+    if(typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
+    const body = ctx.request.body;
+    if(typeof body.name !== "string" || !body.name) throw createError(400);
+    if(typeof body.description !== "string" || !body.description) throw createError(400);
+    if(typeof body.website !== "string" || !body.website) throw createError(400);
+    if(!Array.isArray(body.contacts)) throw createError(400);
+    if(body.contacts.some(c => typeof c.email !== "string" || !c.email)) throw createError(400);
+    if(body.contacts.some(c => !["string", "undefined"].includes(typeof c.phone))) throw createError(400);
+    if(body.contacts.some(c => typeof c.name !== "string" || !c.name)) throw createError(400);
+    if(body.contacts.some(c => typeof c.description !== "string" || !c.description)) throw createError(400);
+
+    const place = new Place({
+        name: body.name,
+        description: body.description,
+        website: body.website,
+        contacts: body.contacts
+    });
+    await place.save();
+    ctx.body = place;
+})
 
 /**
  * GET /places/:id
