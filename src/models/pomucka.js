@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { Place } from './place.js';
 
 var pomuckaSchema = new mongoose.Schema({
 	name: { type: String, required: true, index: true },
@@ -6,13 +7,17 @@ var pomuckaSchema = new mongoose.Schema({
 	ISXN: { type: Number, index: true },
 	categories: [{ type: String, required: true, index: true }],
 	mainImage: String,
+	images: [String],
 	details: {
 		description: String,
 		company: String,
 		author: String,
 		year: Number,
 		mistoVydani: String,
-		images: [String]
+		place: { type: mongoose.Schema.Types.ObjectId, ref: Place.collection.name },
+		disadvType: { type: String, required: true, enum: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K'] },
+		disadvDegree: { type: String, required: true, enum: ['I', 'II', 'III', 'IV', 'V'] },
+		disadvTool: { type: Number, required: true, enum: [1, 2, 3, 4] }
 	}
 }).index({
 	name: "text",
