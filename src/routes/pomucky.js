@@ -1,7 +1,7 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
 import mongoose from 'mongoose';
-
+import { UserRoles } from '../models/user.js';
 import { Pomucka } from '../models/pomucka.js';
 var router = new Router();
 
@@ -25,8 +25,8 @@ var router = new Router();
  * @response {Pomucka}
  */
 router.post('/pomucky', async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if (!ctx.state.user) throw createError(401);
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
 	const body = ctx.request.body;
 
@@ -34,16 +34,20 @@ router.post('/pomucky', async (ctx) => {
 		name: body.name.trim(),
 		signatura: body.signatura.replace(/\/$/, "").trim(),
 		ISXN: parseInt(body.isxn) || null,
-		kategorie: body.kategorie,
+		categories: body.categories,
 		details: {
 			author: body.details.author.trim(),
-			year: parseInt(req.body.year) || null,
-			company: body.company.trim(),
-			mistoVydani: body.mistoVydani.trim(),
+			year: parseInt(body.details.year) || null,
+			company: body.details.company.trim(),
+			mistoVydani: body.details.mistoVydani.trim(),
+			disadvType: body.detailsdisadvType.trim(),
+			disadvDegree: body.details.disadvDegree.trim(),
+			disadvTool: parseInt(body.details.disadvTool),
+			place: body.details.place || ctx.state.place.id
 		}
 	});
 	await add.save();
-	ctx.body = doc;
+	ctx.body = add;
 });
 
 /**
@@ -82,11 +86,34 @@ router.get("/pomucky/searchOptions", async (ctx) => {
  */
 router.get('/pomucky/search', async (ctx) => {
 	const query = {};
+	let sort;
 	if (typeof ctx.query.name === "string") {
 		query.$text = {
-			$search: ctx.query.name,
-			$language: "cs"
+			$search: ctx.query.name
 		};
+	}
+	if (typeof ctx.query.sort === "string") {
+		sort = ctx.query.sort;
+		if (sort === "newest") {
+			sort = {
+				_id: -1
+			};
+		}
+	}
+	if (typeof ctx.query.author === "string") {
+		query.$text = {
+			$search: ctx.query.author
+		};
+	}
+	if (typeof ctx.query.company === "string") {
+		query.$text = {
+			$search: ctx.query.company
+		};
+	}
+	if(typeof ctx.query.place === "string") {
+		query.$text = {
+			$search: ctx.query.place
+		}
 	}
 	if (Array.isArray(ctx.query.categories) && ctx.query.categories.every(t => typeof t === "string")) {
 		query.categories = { $in: ctx.query.categories };
@@ -94,10 +121,37 @@ router.get('/pomucky/search', async (ctx) => {
 	if (Array.isArray(ctx.query.id) && ctx.query.id.every(t => typeof t === "string")) {
 		query._id = { $in: ctx.query.id };
 	}
-	const docs = await Pomucka.find(query);
+	const docs = await Pomucka.find(query).sort(sort);
 	ctx.body = docs;
 });
 
+router.get('/pomucky/search/:key', async (ctx) => {
+	let key = ctx.params.key;
+	let find;
+	if (!key) throw createError(400);
+	if (key.length > 3) throw createError(400);
+	if(key.length === 1) {
+		find = {
+			'details.disadvType': key[0]
+		}
+	}
+	if(key.length === 2) {
+		find = {
+			'details.disadvType': key[0],
+			'details.disadvDegree': key[1]
+		}
+	}
+	if(key.length === 3) {
+		find = {
+			'details.disadvType': key[0],
+			'details.disadvDegree': key[1],
+			'details.disadvTool': key[2]
+		}
+	}
+	const docs = await Pomucka.find(find);
+	if (!docs) throw createError(404);
+	ctx.body = docs;
+})
 /**
  * GET /pomucky/:id
  * 
@@ -108,7 +162,7 @@ router.get('/pomucky/search', async (ctx) => {
  * @response {Pomucka}
  */
 router.get("/pomucky/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
 	const doc = await Pomucka.findById(ctx.params.id);
 	if (!doc) throw createError(404);
 	ctx.body = doc;
@@ -126,9 +180,9 @@ router.get("/pomucky/:id", async (ctx) => {
  * @response {Pomucka}
  */
 router.put("/pomucky/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if (!ctx.state.user) throw createError(401);
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	const doc = Pomucka.find({
 		_id: ctx.params.id
 	});
@@ -136,7 +190,7 @@ router.put("/pomucky/:id", async (ctx) => {
 	if (typeof ctx.request.body === "string") throw createError(401);
 	/** @type {Partial<Pomucka>} */
 	const body = ctx.request.body;
-	if(!doc.details) doc.details = {};
+	if (!doc.details) doc.details = {};
 	if (typeof body.name === "string") {
 		doc.name = body.name;
 	}
@@ -152,6 +206,18 @@ router.put("/pomucky/:id", async (ctx) => {
 	if (body.details && typeof body.details.mistoVydani == "string") {
 		doc.details.mistoVydani = body.details.mistoVydani;
 	}
+	if(body.details && typeof body.details.disadvType === "string") {
+		doc.details.disadvType = body.details.disadvType;
+	}
+	if (body.details && typeof body.details.disadvDegree === "string") {
+		doc.details.disadvDegree = body.details.disadvDegree;
+	}
+	if (body.details && typeof body.details.disadvTool === "string") {
+		doc.details.disadvTool = body.details.disadvTool;
+	}
+	if (body.details && typeof body.details.place === "string") {
+		doc.details.place = body.details.place;
+	}
 	if (typeof body.signatura == "string") {
 		doc.signatura = body.signatura;
 	}
@@ -163,6 +229,28 @@ router.put("/pomucky/:id", async (ctx) => {
 	}
 	await doc.save();
 	ctx.body = doc;
+});
+
+/**
+ * DELETE /pomucky/:id
+ * 
+ * Smaže pomůcku
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * 
+ * @request {Partial<Omit<Pomucka, "_id">>}
+ * 
+ * @response {Pomucka}
+ */
+router.delete("/pomucky/:id", async (ctx) => {
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if (!ctx.state.user) throw createError(401);
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	const doc = Pomucka.find({
+		_id: ctx.params.id
+	});
+	if (!doc) throw createError(404);
+	ctx.body = await doc.deleteOne();
 });
 
 export default router;
