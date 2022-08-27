@@ -29,7 +29,6 @@ router.post('/pomucky', async (ctx) => {
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
 	const body = ctx.request.body;
-
 	var add = new Pomucka({
 		name: body.name.trim(),
 		signatura: body.signatura.replace(/\/$/, "").trim(),
@@ -40,7 +39,7 @@ router.post('/pomucky', async (ctx) => {
 			year: parseInt(body.details.year) || null,
 			company: body.details.company.trim(),
 			mistoVydani: body.details.mistoVydani.trim(),
-			disadvType: body.detailsdisadvType.trim(),
+			disadvType: body.details.disadvType.trim(),
 			disadvDegree: body.details.disadvDegree.trim(),
 			disadvTool: parseInt(body.details.disadvTool),
 			place: body.details.place || ctx.state.place.id
@@ -59,16 +58,20 @@ router.post('/pomucky', async (ctx) => {
  *  @property {string[]} kategorie - seznam kategorií
  */
 router.get("/pomucky/searchOptions", async (ctx) => {
-	const [
-		kategorie
-	] = await Promise.all([
-		Pomucka.distinct("kategorie")
-	]);
-
+	let searchOptions = {
+		authors: await Pomucka.distinct("details.author"),
+		years: await Pomucka.distinct("details.year"),
+		companies: await Pomucka.distinct("details.company"),
+		mistoVydani: await Pomucka.distinct("details.mistoVydani"),
+		disadvTypes: await Pomucka.distinct("details.disadvType"),
+		disadvDegrees: await Pomucka.distinct("details.disadvDegree"),
+		disadvTools: await Pomucka.distinct("details.disadvTool"),
+		categories: await Pomucka.distinct("categories")
+	}
 	ctx.response.headers["Cache-Control"] = "max-age=43200";
 
 	ctx.body = {
-		kategorie
+		searchOptions
 	};
 });
 
@@ -87,10 +90,9 @@ router.get("/pomucky/searchOptions", async (ctx) => {
 router.get('/pomucky/search', async (ctx) => {
 	const query = {};
 	let sort;
-	if (typeof ctx.query.name === "string") {
-		query.$text = {
-			$search: ctx.query.name
-		};
+	// search
+	if (typeof ctx.query.search === "string") {
+		query.name = new RegExp(ctx.query.search, "i");
 	}
 	if (typeof ctx.query.sort === "string") {
 		sort = ctx.query.sort;
