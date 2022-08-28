@@ -24,6 +24,7 @@ var router = new Router();
  * 
  * @response {Pomucka}
  */
+
 router.post('/pomucky', async (ctx) => {
 	if (!ctx.state.user) throw createError(401);
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
@@ -59,14 +60,38 @@ router.post('/pomucky', async (ctx) => {
  */
 router.get("/pomucky/searchOptions", async (ctx) => {
 	let searchOptions = {
-		authors: await Pomucka.distinct("details.author"),
-		years: await Pomucka.distinct("details.year"),
-		companies: await Pomucka.distinct("details.company"),
-		mistoVydani: await Pomucka.distinct("details.mistoVydani"),
-		disadvTypes: await Pomucka.distinct("details.disadvType"),
-		disadvDegrees: await Pomucka.distinct("details.disadvDegree"),
-		disadvTools: await Pomucka.distinct("details.disadvTool"),
-		categories: await Pomucka.distinct("categories")
+		author:{
+			name: "Autor",
+			value: await Pomucka.distinct("details.author")
+		},
+		year:{
+			name: "Rok vydání",
+			value: await Pomucka.distinct("details.year")
+		},
+		company: {
+			name: "Vydavatel",
+			value: await Pomucka.distinct("details.company")
+		},
+		mistoVydani: {
+			name: "Místo vydání",
+			value: await Pomucka.distinct("details.mistoVydani")
+		},
+		disadvType: {
+			name: "Typ znevýhodnění",
+			value: await Pomucka.distinct("details.disadvType")
+		},
+		disadvDegree: {
+			name: "Stupeň znevýhodnění",
+			value: await Pomucka.distinct("details.disadvDegree")
+		},
+		disadvTool: {
+			name: "Typ pomůcky",
+			value: await Pomucka.distinct("details.disadvTool")
+		},
+		category: {
+			name: "Kategorie",
+			value: await Pomucka.distinct("categories")
+		}
 	}
 	ctx.response.headers["Cache-Control"] = "max-age=43200";
 
