@@ -39,11 +39,7 @@ router.post('/pomucky', async (ctx) => {
 			author: body.details.author.trim(),
 			year: parseInt(body.details.year) || null,
 			company: body.details.company.trim(),
-			mistoVydani: body.details.mistoVydani.trim(),
-			disadvType: body.details.disadvType.trim(),
-			disadvDegree: body.details.disadvDegree.trim(),
-			disadvTool: parseInt(body.details.disadvTool),
-			place: body.details.place || ctx.state.place.id
+			mistoVydani: body.details.mistoVydani.trim()
 		}
 	});
 	await add.save();
@@ -59,45 +55,22 @@ router.post('/pomucky', async (ctx) => {
  *  @property {string[]} kategorie - seznam kategorií
  */
 router.get("/pomucky/searchOptions", async (ctx) => {
-	let searchOptions = {
-		author:{
-			name: "Autor",
-			value: await Pomucka.distinct("details.author")
-		},
-		year:{
-			name: "Rok vydání",
-			value: await Pomucka.distinct("details.year")
-		},
-		company: {
-			name: "Vydavatel",
-			value: await Pomucka.distinct("details.company")
-		},
-		mistoVydani: {
-			name: "Místo vydání",
-			value: await Pomucka.distinct("details.mistoVydani")
-		},
-		disadvType: {
-			name: "Typ znevýhodnění",
-			value: await Pomucka.distinct("details.disadvType")
-		},
-		disadvDegree: {
-			name: "Stupeň znevýhodnění",
-			value: await Pomucka.distinct("details.disadvDegree")
-		},
-		disadvTool: {
-			name: "Typ pomůcky",
-			value: await Pomucka.distinct("details.disadvTool")
-		},
-		category: {
-			name: "Kategorie",
-			value: await Pomucka.distinct("categories")
-		}
-	}
+	const [
+		authors,
+		years,
+		companies,
+		mistaVydani,
+		categories
+	] = await Promise.all([
+		Pomucka.distinct("details.author"),
+		Pomucka.distinct("details.year"),
+		Pomucka.distinct("details.company"),
+		Pomucka.distinct("details.mistoVydani"),
+		Pomucka.distinct("categories")
+	]);
 	ctx.response.headers["Cache-Control"] = "max-age=43200";
 
-	ctx.body = {
-		searchOptions
-	};
+	ctx.body = { authors, years, companies, mistaVydani, categories };
 });
 
 /**
@@ -115,9 +88,10 @@ router.get("/pomucky/searchOptions", async (ctx) => {
 router.get('/pomucky/search', async (ctx) => {
 	const query = {};
 	let sort;
-	// search
-	if (typeof ctx.query.search === "string") {
-		query.name = new RegExp(ctx.query.search, "i");
+	if (typeof ctx.query.name === "string") {
+		query.$text = {
+			$search: ctx.query.name
+		};
 	}
 	if (typeof ctx.query.sort === "string") {
 		sort = ctx.query.sort;
@@ -152,33 +126,6 @@ router.get('/pomucky/search', async (ctx) => {
 	ctx.body = docs;
 });
 
-router.get('/pomucky/search/:key', async (ctx) => {
-	let key = ctx.params.key;
-	let find;
-	if (!key) throw createError(400);
-	if (key.length > 3) throw createError(400);
-	if(key.length === 1) {
-		find = {
-			'details.disadvType': key[0]
-		}
-	}
-	if(key.length === 2) {
-		find = {
-			'details.disadvType': key[0],
-			'details.disadvDegree': key[1]
-		}
-	}
-	if(key.length === 3) {
-		find = {
-			'details.disadvType': key[0],
-			'details.disadvDegree': key[1],
-			'details.disadvTool': key[2]
-		}
-	}
-	const docs = await Pomucka.find(find);
-	if (!docs) throw createError(404);
-	ctx.body = docs;
-})
 /**
  * GET /pomucky/:id
  * 
@@ -233,26 +180,14 @@ router.put("/pomucky/:id", async (ctx) => {
 	if (body.details && typeof body.details.mistoVydani == "string") {
 		doc.details.mistoVydani = body.details.mistoVydani;
 	}
-	if(body.details && typeof body.details.disadvType === "string") {
-		doc.details.disadvType = body.details.disadvType;
-	}
-	if (body.details && typeof body.details.disadvDegree === "string") {
-		doc.details.disadvDegree = body.details.disadvDegree;
-	}
-	if (body.details && typeof body.details.disadvTool === "string") {
-		doc.details.disadvTool = body.details.disadvTool;
-	}
-	if (body.details && typeof body.details.place === "string") {
-		doc.details.place = body.details.place;
-	}
 	if (typeof body.signatura == "string") {
 		doc.signatura = body.signatura;
 	}
 	if (typeof body.ISXN == "string") {
 		doc.ISXN = body.ISXN;
 	}
-	if (Array.isArray(body.kategorie) && body.kategorie.findIndex(t => typeof t !== "string") === -1) {
-		doc.kategorie = body.kategorie;
+	if (Array.isArray(body.categories) && body.categories.findIndex(t => typeof t !== "string") === -1) {
+		doc.categories = body.categories;
 	}
 	await doc.save();
 	ctx.body = doc;

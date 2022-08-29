@@ -559,9 +559,9 @@ describe("Pomucky", () => {
         const res = await request(app.callback())
             .get(`/pomucky/searchOptions`);
         expect(res.statusCode).toBe(200);
-        expect(Array.isArray(res.body.kategorie)).toBe(true);
-        // console.log(res.body);
-        // expect(res.body.kategorie.includes("K.II.09")).toBe(true);
+        console.log(res.body);
+        expect(Array.isArray(res.body.categories)).toBe(true);
+        // expect(res.body.categories.includes("K.II.09")).toBe(true);
     });
     describe("Search", () => {
         test("By name", async () => {
