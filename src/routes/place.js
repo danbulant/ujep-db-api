@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 
 import { Place } from '../models/place.js';
 import { UserRoles } from '../models/user.js';
+import { parseBody } from '../utils.js';
 
 var router = new Router();
 
@@ -37,7 +38,7 @@ router.get('/users/@self/place', async (ctx) => {
  * @request {Partial<Place>}
  * @response {Place}
  */
-router.put("/users/@self/place", async (ctx) => {
+router.put("/users/@self/place", parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     throw createError(500);
 });
@@ -62,7 +63,7 @@ router.get("/places", async (ctx) => {
  * @request {Place}
  * @response {Place}
  */
-router.post("/places", async (ctx) => {
+router.post("/places", parseBody(), async (ctx) => {
     if(!ctx.state.user) throw createError(401);
     if(ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
     if(typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);

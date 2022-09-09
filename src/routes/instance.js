@@ -5,6 +5,7 @@ import { Instances } from '../models/instances.js';
 import { Place } from '../models/place.js';
 import { Pomucka } from '../models/pomucka.js';
 import { UserRoles } from '../models/user.js';
+import { parseBody } from '../utils.js';
 var router = new Router();
 
 /**
@@ -26,7 +27,7 @@ var router = new Router();
  * 
  * @response {Instance}
  */
-router.post('/pomucky/:id/instances', async (ctx) => {
+router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     const pomucka = await Pomucka.find({
         _id: ctx.params.id
@@ -118,7 +119,7 @@ router.get("/instances/:id", async (ctx) => {
  * @request {{ currentlyAt: string, rentedBy?: { name: string, identifier: string } }}
  * @response {Instance}
  */
-router.put("/instances/:id", async (ctx) => {
+router.put("/instances/:id", parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);

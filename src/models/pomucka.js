@@ -6,7 +6,6 @@ var pomuckaSchema = new mongoose.Schema({
 	ISXN: { type: Number, index: true },
 	categories: [{ type: String, required: true, index: true }],
 	mainImage: String,
-	images: [String],
 	details: {
 		description: String,
 		company: String,

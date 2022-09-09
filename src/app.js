@@ -3,7 +3,6 @@ import Koa from "koa";
 import logger from "koa-morgan";
 import cors from "@koa/cors";
 import Router from "@koa/router";
-import bodyParser from "koa-body";
 import mongoose from "mongoose";
 import createError from 'http-errors';
 import { jwtVerify } from "jose";
@@ -50,7 +49,6 @@ app.use(cors({
 	credentials: true
 }));
 app.use(logger('dev'));
-app.use(bodyParser({ text: false }));
 
 app.use(async (ctx, next) => {
 	for(const key in ctx.query) {

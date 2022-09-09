@@ -1,8 +1,13 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
 import mongoose from 'mongoose';
+import bodyParser from "koa-body";
+
 import { UserRoles } from '../models/user.js';
 import { Pomucka } from '../models/pomucka.js';
+import { Image } from '../models/image.js';
+import { parseBody } from '../utils.js';
+
 var router = new Router();
 
 /**
@@ -16,6 +21,22 @@ var router = new Router();
  */
 
 /**
+ * @typedef Image
+ * @property {string} _id
+ * @property {string} pomucka
+ * @property {string} alt
+ * @property {string} data
+ * @property {string} mimetype
+ */
+
+/**
+ * @typedef MinimalImage
+ * @property {string} _id
+ * @property {string} alt
+ * @property {string} mimetype
+ */
+
+/**
  * POST /pomucky
  * 
  * Přidá novou pomůcku.
@@ -25,7 +46,7 @@ var router = new Router();
  * @response {Pomucka}
  */
 
-router.post('/pomucky', async (ctx) => {
+router.post('/pomucky', parseBody(), async (ctx) => {
 	if (!ctx.state.user) throw createError(401);
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
 	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
@@ -147,13 +168,16 @@ router.get("/pomucky/:id", async (ctx) => {
  * 
  * Aktualizuje data pomůcky
  * 
+ * @auth
+ * @role GLOBAL_ADMIN
+ * 
  * @param id - přesné ID (_id) pomůcky
  * 
  * @request {Partial<Omit<Pomucka, "_id">>}
  * 
  * @response {Pomucka}
  */
-router.put("/pomucky/:id", async (ctx) => {
+router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
 	if (!ctx.state.user) throw createError(401);
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
@@ -191,6 +215,160 @@ router.put("/pomucky/:id", async (ctx) => {
 	}
 	await doc.save();
 	ctx.body = doc;
+});
+
+/**
+ * PUT /pomucky/:id/images
+ * 
+ * Nahrává obrázky pro pomůcku.
+ * Alt se použije jako alternativní text pro čtečky obrazovky.
+ * Mimetype je nutný pro správné zobrazení obrázku. Povolené mimetypy jsou: image/jpeg, image/png, image/gif, image/webp
+ * Pro animované věci se doporučuje WEBP kvůli menší velikosti a vyšší kvalitě.
+ * 
+ * @auth
+ * @role GLOBAL_ADMIN
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * 
+ * @request {{ alt: String, data: String, mimetype: String }}
+ */
+router.put("/pomucky/:id/images", bodyParser({ text: false, multipart: false, json: true, urlencoded: false, jsonLimit: "10mb" }), async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if (!ctx.state.user) throw createError(401);
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	const doc = await Pomucka.findById(ctx.params.id);
+	if(!doc) throw createError(404);
+	const alt = ctx.request.body.alt;
+	if(typeof alt !== "string") throw createError(400);
+	const mimetype = ctx.request.body.mimetype;
+	if(typeof mimetype !== "string") throw createError(400);
+	if(["image/jpeg", "image/png", "image/gif", "image/webp"].indexOf(mimetype) === -1) throw createError(400);
+	const data = ctx.request.body.data;
+	if(typeof data !== "string") throw createError(400);
+	let buffer;
+	try {
+		buffer = Buffer.from(data, "base64");
+	} catch(e) {
+		throw createError(400);
+	}
+
+	let image = await Image.create({
+		alt: alt,
+		pomucka: doc._id,
+		data: buffer,
+		mimetype
+	});
+
+	ctx.body = image;
+});
+
+/**
+ * DELETE /pomucky/:id/images/:imageId
+ * 
+ * Odstraní obrázek z pomůcky
+ * 
+ * @auth
+ * @role GLOBAL_ADMIN
+ * 
+ */
+router.delete("/pomucky/:id/images/:imageId", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if (!ctx.state.user) throw createError(401);
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	const doc = await Pomucka.findById(ctx.params.id);
+	if(!doc) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	const image = await Image.findById(ctx.params.imageId);
+	if(!image) throw createError(404);
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	await image.deleteOne();
+	ctx.body = { ok: true };
+});
+
+/**
+ * GET /pomucky/:id/images
+ * 
+ * Zobrazí seznam obrázků pro danou pomůcku.
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * 
+ * @response {MinimalImage[]}
+ */
+router.get("/pomucky/:id/images", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	const doc = await Pomucka.findById(ctx.params.id);
+	if(!doc) throw createError(404);
+	const images = await Image.find({ pomucka: doc._id });
+	ctx.body = images.map(t => ({ 
+		_id: t._id,
+		alt: t.alt,
+		mimetype: t.mimetype
+	}));
+});
+
+/**
+ * GET /pomucky/:id/images/:imageId
+ * 
+ * Zobrazí informace o obrázku pro danou pomůcku.
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * @param imageId - přesné ID (_id) obrázku
+ * 
+ * @response {Image}
+ */
+router.get("/pomucky/:id/images/:imageId", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	const doc = await Pomucka.findById(ctx.params.id);
+	if(!doc) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	const image = await Image.findById(ctx.params.imageId);
+	if(!image) throw createError(404);
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	ctx.body = image;
+});
+
+/**
+ * GET /pomucky/:id/images/:imageId/data
+ * 
+ * Zobrazí data obrázku pro danou pomůcku. Tohle se dá použít jako "src" pro img.
+ * 
+ * @param id - přesné ID (_id) pomůcky
+ * @param imageId - přesné ID (_id) obrázku
+ */
+router.get("/pomucky/:id/images/:imageId/data", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	const doc = await Pomucka.findById(ctx.params.id);
+	if(!doc) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	const image = await Image.findById(ctx.params.imageId);
+	if(!image) throw createError(404);
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	ctx.body = image.data;
+	ctx.type = image.mimetype;
+});
+
+/**
+ * GET /images/:imageId
+ * 
+ * Dá redirect na plnohodnotnou URL pro informace o obrázku.
+ */
+router.get("/images/:id", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	const image = await Image.findById(ctx.params.id);
+	if(!image) throw createError(404);
+	ctx.redirect(`/api/v1/pomucky/${image.pomucka}/images/${image._id}`);
+});
+
+/**
+ * GET /images/:imageId/data
+ * 
+ * Dá redirect na plnohodnotnou URL pro data obrázku.
+ */
+router.get("/images/:id/data", async (ctx) => {
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	const image = await Image.findById(ctx.params.id);
+	if(!image) throw createError(404);
+	ctx.redirect(`/api/v1/pomucky/${image.pomucka}/images/${image._id}/data`);
 });
 
 /**

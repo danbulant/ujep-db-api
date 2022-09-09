@@ -7,6 +7,7 @@ import { User, UserRoles } from '../models/user.js';
 import { privateKey } from '../keys.js';
 import mongoose from 'mongoose';
 import { Place } from '../models/place.js';
+import { parseBody } from '../utils.js';
 
 var router = new Router();
 
@@ -34,7 +35,7 @@ var router = new Router();
  * 
  * @response {User}
  */
-router.put("/token", async (ctx) => {
+router.put("/token", parseBody(), async (ctx) => {
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);
     if (typeof body.name !== "string") throw createError(400);
@@ -89,7 +90,7 @@ router.delete("/token", async (ctx) => {
  * 
  * @response {User}
  */
-router.post("/users", async (ctx) => {
+router.post("/users", parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const body = ctx.request.body;
@@ -135,7 +136,7 @@ router.post("/users", async (ctx) => {
  * @request {{ oldPassword?: string, newPassword?: string }}
  * @response {User}
  */
-router.put("/users/@self", async (ctx) => {
+router.put("/users/@self", parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);
