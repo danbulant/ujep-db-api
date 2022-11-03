@@ -53,14 +53,13 @@ router.post('/pomucky', parseBody(), async (ctx) => {
 	const body = ctx.request.body;
 	var add = new Pomucka({
 		name: body.name.trim(),
-		signatura: body.signatura.replace(/\/$/, "").trim(),
 		ISXN: parseInt(body.isxn) || null,
 		categories: body.categories,
 		details: {
-			author: body.details.author.trim(),
+			author: body.details.author?.trim() || null,
 			year: parseInt(body.details.year) || null,
-			company: body.details.company.trim(),
-			mistoVydani: body.details.mistoVydani.trim()
+			company: body.details.company?.trim() || null,
+			description: body.details.description?.trim() || null
 		}
 	});
 	await add.save();

@@ -203,6 +203,23 @@ describe("Developer User operations", () => {
             .set('Cookie', `token=${USER_JWT}`);
         expect(res.statusCode).toBe(500);
     });
+    test("Creating pomucka", async () => {
+        const res = await request(app.callback())
+            .post("/pomucky")
+            .set('Cookie', `token=${USER_JWT}`)
+            .send({
+                name: "test pomucka",
+                categories: [],
+                details: {
+                    description: "test description",
+                    author: "test author"
+                }
+            });
+        expect(res.statusCode).toBe(200);
+        expect(res.body.name).toBe("test pomucka");
+        expect(res.body.details.description).toBe("test description");
+        expect(res.body.details.author).toBe("test author");
+    });
     describe("Creating user", () => {
         let newUserID;
         afterAll(async () => {
