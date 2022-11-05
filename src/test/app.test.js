@@ -240,7 +240,8 @@ describe("Developer User operations", () => {
                 .send({
                     name: "new@example.com",
                     password: "newpassword",
-                    role: 1
+                    role: 1,
+                    displayName: "New user"
                 });
             expect(res.statusCode).toBe(200);
         });
@@ -319,6 +320,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "placed@example.com",
                     password: "newpassword",
+                    displayNAme: "placed user",
                     role: 1,
                     place: place._id
                 });
@@ -334,6 +336,7 @@ describe("Developer User operations", () => {
                 .set('Cookie', `token=${USER_JWT}`)
                 .send({
                     name: "placed2@example.com",
+                    displayName: "Placed 2",
                     password: "newpassword",
                     role: 1,
                     place: "bad"
@@ -346,6 +349,7 @@ describe("Developer User operations", () => {
                 .set('Cookie', `token=${USER_JWT}`)
                 .send({
                     name: "placed3@example.com",
+                    displayName: "Placed 3",
                     password: "newpassword",
                     role: 1,
                     place: "62af3299da7e181b79af017b"

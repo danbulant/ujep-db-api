@@ -16,6 +16,7 @@ var router = new Router();
  *  @property {string} _id
  *  @property {string} name
  *  @property {number} role
+ *  @property {string} displayName
  *  @property {Place} place
  */
 /**
@@ -56,6 +57,7 @@ router.put("/token", parseBody(), async (ctx) => {
     ctx.body = {
         _id: user.id,
         name: user.name,
+        displayName: user.displayName,
         forceChangePassword: user.forceChangePassword,
         role: user.role,
         place: user.place
@@ -95,20 +97,23 @@ router.post("/users", parseBody(), async (ctx) => {
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);
-    if (!body.role || typeof body.role !== "number") throw createError(400);
+    if (!body.role || typeof body.role !== "number") throw createError(400, "Role is required");
     body.role = Math.round(body.role);
-    if (!body.name || typeof body.name !== "string" || !body.name.includes("@") || body.name.length < 2 || body.name.length > 256) throw createError(400);
-    if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400);
+    if (!body.name || typeof body.name !== "string" || !body.name.includes("@") || body.name.length < 2 || body.name.length > 256) throw createError(400, "Invalid name");
+    if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400, "Invalid password");
+    if (!body.displayName) body.displayName = body.name;
+    if (!body.displayName || typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError(400, "Invalid displayName");
     if (body.place && body.place !== ctx.state.place.id) {
         if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
         if(!mongoose.isValidObjectId(body.place)) throw createError(400);
         let place = await Place.findById(body.place);
         if(!place) throw createError.NotFound("place_not_found");
     }
-    if (body.role < UserRoles.USER) throw createError(400);
-    if (body.role > ctx.state.role) throw createError(403);
+    if (body.role < UserRoles.USER) throw createError(400, "Invalid role");
+    if (body.role > ctx.state.role) throw createError(403, "Cannot create higher role");
     const user = new User({
         name: body.name,
+        displayName: body.displayName,
         role: body.role,
         place: body.place || ctx.state.place.id,
         forceChangePassword: true,
@@ -119,6 +124,7 @@ router.post("/users", parseBody(), async (ctx) => {
     ctx.body = {
         _id: user.id,
         name: user.name,
+        displayName: user.displayName,
         forceChangePassword: user.forceChangePassword,
         role: user.role,
         place: user.place
@@ -129,7 +135,7 @@ router.post("/users", parseBody(), async (ctx) => {
  * PUT /users/@self
  * 
  * Aktualizuje informace o uživateli.
- * Momentálně umí jen heslo.
+ * Momentálně umí jen heslo a display name.
  * 
  * @auth
  * 
@@ -150,12 +156,17 @@ router.put("/users/@self", parseBody(), async (ctx) => {
         user.password = await bcrypt.hash(body.newPassword, 10);
         user.forceChangePassword = false;
     }
+    if (body.displayName) {
+        if (typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError.BadRequest("invalid_display_name");
+        user.displayName = body.displayName;
+    }
 
     await user.save();
 
     ctx.body = {
         _id: user.id,
         name: user.name,
+        displayName: user.displayName,
         forceChangePassword: user.forceChangePassword,
         role: user.role,
         place: user.place
@@ -180,6 +191,7 @@ router.get("/users/@self", async (ctx) => {
     ctx.body = {
         _id: user.id,
         name: user.name,
+        displayName: user.displayName,
         forceChangePassword: user.forceChangePassword,
         role: user.role,
         place: user.place
@@ -209,6 +221,7 @@ router.get("/users/@self", async (ctx) => {
     ctx.body = {
         _id: user.id,
         name: user.name,
+        displayName: user.displayName,
         role: user.role,
         place: user.place
     };
@@ -227,7 +240,7 @@ router.get("/places/@local/users", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
     const users = await User.find({ place: ctx.state.place.id });
-    ctx.body = users.map(user => ({ _id: user.id, name: user.name, role: user.role, place: user.place }));
+    ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 
 /**
@@ -243,7 +256,7 @@ router.get("/users", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
     const users = await User.find();
-    ctx.body = users.map(user => ({ _id: user.id, name: user.name, role: user.role, place: user.place }));
+    ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 
 export default router;

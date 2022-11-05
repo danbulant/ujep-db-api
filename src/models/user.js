@@ -4,6 +4,7 @@ import { Place } from './place.js';
 var userSchema = new mongoose.Schema({
     name: String,
     password: String, //bcrypt hash
+    displayName: String,
     forceChangePassword: {
         type: Boolean,
         default: false
