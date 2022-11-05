@@ -24,7 +24,7 @@ var router = new Router();
  * @auth
  * @response {Place}
  */
-router.get('/users/@self/place', async (ctx) => {
+router.get("/users/@self/place", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     ctx.body = ctx.state.place;
 });
@@ -40,7 +40,26 @@ router.get('/users/@self/place', async (ctx) => {
  */
 router.put("/users/@self/place", parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
-    throw createError(500);
+    if (ctx.state.role < UserRoles.LOCAL_MANAGER) throw createError(403);
+    const place = ctx.state.place;
+    const body = ctx.request.body;
+    if (body.name && typeof body.name === "string") place.name = body.name;
+    if (body.description && typeof body.description === "string") place.description = body.description;
+    if (body.website && typeof body.website === "string") place.website = body.website;
+    if (body.contacts) {
+        if(!Array.isArray(body.contacts)) throw createError(400, "contacts must be an array");
+        if(body.contacts.some(c => typeof c.email !== "string" || !c.email)) throw createError(400, "contacts must have email");
+        if(body.contacts.some(c => !["string", "undefined"].includes(typeof c.phone))) throw createError(400, "contacts must have valid phone, or omit it");
+        if(body.contacts.some(c => typeof c.name !== "string" || !c.name)) throw createError(400, "contacts must have name");
+        if(body.contacts.some(c => typeof c.description !== "string" || !c.description)) throw createError(400, "contacts must have description");
+        place.contacts = body.contacts;
+    }
+    if (body.banner) {
+        place.banner.data = Buffer.from(body.banner.data, "base64");
+        place.banner.mimetype = body.mimetype;
+    }
+    await place.save();
+    ctx.body = place;
 });
 
 /**
@@ -76,7 +95,13 @@ router.post("/places", parseBody(), async (ctx) => {
     if(body.contacts.some(c => !["string", "undefined"].includes(typeof c.phone))) throw createError(400);
     if(body.contacts.some(c => typeof c.name !== "string" || !c.name)) throw createError(400);
     if(body.contacts.some(c => typeof c.description !== "string" || !c.description)) throw createError(400);
-
+    var buf;
+    if(body.buffer) {
+        buf = {
+            data: Buffer.from(body.buffer.data, "base64"),
+            mimetype: body.buffer.mimetype
+        };
+    }
     const place = new Place({
         name: body.name,
         description: body.description,

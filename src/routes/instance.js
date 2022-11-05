@@ -74,12 +74,16 @@ router.get("/pomucky/:id/instances", async (ctx) => {
         }
     });
     ctx.body = {
-        instances: instances.map(instance => ({
-            pomucka: instance.pomucka,
-            ownedBy: instance.ownedBy,
-            currentlyAt: instance.currentlyAt,
-            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
-        })),
+        instances: instances.map(instance => {
+            if(instance.ownedBy) instance.ownedBy.banner = null;
+            if(instance.currentlyAt) instance.ownedBy.banner = null;
+            return {
+                pomucka: instance.pomucka,
+                ownedBy: instance.ownedBy,
+                currentlyAt: instance.currentlyAt,
+                rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
+            };
+        }),
         places, pomucka
     };
 });

@@ -9,7 +9,11 @@ var placeSchema = new mongoose.Schema({
         phone: String,
         name: String,
         description: String
-    }]
+    }],
+    banner: {
+        data: Buffer,
+        mimetype: String
+    }
 });
 
 export const Place = mongoose.model('place', placeSchema, "place");

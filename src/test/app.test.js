@@ -209,13 +209,6 @@ describe("Developer User operations", () => {
             .set('Cookie', `token=${USER_JWT}`);
         expect(res.statusCode).toBe(200);
     });
-    // TODO: Correctly implement place updates
-    test("Updating place gives internal error", async () => {
-        const res = await request(app.callback())
-            .put(`/users/@self/place`)
-            .set('Cookie', `token=${USER_JWT}`);
-        expect(res.statusCode).toBe(500);
-    });
     test("Creating pomucka", async () => {
         const res = await request(app.callback())
             .post("/pomucky")
