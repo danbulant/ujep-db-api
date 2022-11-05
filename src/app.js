@@ -88,7 +88,7 @@ app.use(async (ctx, next) => {
 		ctx.state.role = user.role;
 		ctx.state.place = user.place;
 
-		if (user.forceChangePassword && (ctx.method !== "PUT" || ctx.request.path !== "/users/@self")) {
+		if (user.forceChangePassword && !["/users/@self", "/token"].includes(ctx.request.path)) {
 			throw new createError.Forbidden("password_change_required");
 		}
 	}

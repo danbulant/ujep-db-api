@@ -139,9 +139,22 @@ test("Getting non-existent place fails", async () => {
 
 //! This must be ran always all at once. Other routes will not work until password is changed
 describe("Developer User operations", () => {
-    test("Getting current user details fails as password change is required", async () => {
+    test("Getting current user details works", async () => {
         const res = await request(app.callback())
             .get("/users/@self")
+            .set('Cookie', `token=${USER_JWT}`)
+        expect(res.statusCode).toBe(200);
+    });
+    // because of how login works, this won't actually log out the user in test, at least not for now.
+    test("Log out works", async () => {
+        const res = await request(app.callback())
+            .delete("/token")
+            .set('Cookie', `token=${USER_JWT}`)
+        expect(res.statusCode).toBe(200);
+    });
+    test("Getting list of all users fails when password change is required", async () => {
+        const res = await request(app.callback())
+            .get("/users")
             .set('Cookie', `token=${USER_JWT}`)
         expect(res.statusCode).toBe(403);
     });
