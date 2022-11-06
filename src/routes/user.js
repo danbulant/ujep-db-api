@@ -233,13 +233,32 @@ router.get("/users/@self", async (ctx) => {
  * Zobrazí seznam uživatelů patřící k místu uživatele
  * 
  * @auth
- * @role LOCAL_ADMIN
+ * @role LOCAL_MANAGER
  * @response {User[]}
  */
 router.get("/places/@local/users", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
+    if (ctx.state.role < UserRoles.LOCAL_MANAGER) throw createError(403);
     const users = await User.find({ place: ctx.state.place.id });
+    ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
+});
+
+/**
+ * GET /places/:id/users
+ * 
+ * Zobrazí seznam uživatelů patřící k místu
+ * 
+ * @auth
+ * @role GLOBAL_MANAGER
+ * @response {User[]}
+ */
+router.get("/places/:id/users", async (ctx) => {
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+    if (!ctx.state.user) throw createError(401);
+    if (ctx.state.role < UserRoles.GLOBAL_MANAGER) throw createError(403);
+    const place = await Place.findById(ctx.params.id);
+    if (!place) throw createError(404);
+    const users = await User.find({ place: place.id });
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 

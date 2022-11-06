@@ -5,7 +5,7 @@ import { SignJWT } from "jose";
 
 import { app } from "../app";
 import { Place } from "../models/place";
-import { User } from "../models/user";
+import { User, UserRoles } from "../models/user";
 import { privateKey } from "../keys";
 import { Pomucka } from "../models/pomucka";
 
@@ -28,7 +28,7 @@ beforeAll(async () => {
     await PLACE.save();
     USER = new User({
         name: "developer@example.com",
-        role: 5,
+        role: UserRoles.DEVELOPER,
         place: PLACE._id,
         forceChangePassword: true,
         password: await bcrypt.hash(USER_PASSWORD, 10)
@@ -173,7 +173,7 @@ describe("Developer User operations", () => {
             .get("/users/@self")
             .set('Cookie', `token=${USER_JWT}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body.role).toBe(5);
+        expect(res.body.role).toBe(UserRoles.DEVELOPER);
         expect(res.body.password).toBeUndefined();
         expect(res.body.name).toBe("developer@example.com");
     });
@@ -192,6 +192,13 @@ describe("Developer User operations", () => {
     test("Getting list of users in place returns 1 user", async () => {
         const res = await request(app.callback())
             .get("/places/@local/users")
+            .set('Cookie', `token=${USER_JWT}`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.length).toBe(1);
+    });
+    test("Getting list of users in place by id returns 1 user", async() => {
+        const res = await request(app.callback())
+            .get(`/places/${PLACE._id}/users`)
             .set('Cookie', `token=${USER_JWT}`);
         expect(res.statusCode).toBe(200);
         expect(res.body.length).toBe(1);
@@ -240,7 +247,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "new@example.com",
                     password: "newpassword",
-                    role: 1,
+                    role: UserRoles.LOCAL_MANAGER,
                     displayName: "New user"
                 });
             expect(res.statusCode).toBe(200);
@@ -270,7 +277,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "",
                     password: "newpassword",
-                    role: 1
+                    role: UserRoles.LOCAL_MANAGER
                 });
             expect(res.statusCode).toBe(400);
         });
@@ -281,7 +288,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "test@example.com",
                     password: "",
-                    role: 1
+                    role: UserRoles.LOCAL_MANAGER
                 });
             expect(res.statusCode).toBe(400);
         });
@@ -292,7 +299,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "test2@example.com",
                     password: "newpassword",
-                    role: 0
+                    role: UserRoles.DEFAULT
                 });
             expect(res.statusCode).toBe(400);
         });
@@ -321,7 +328,7 @@ describe("Developer User operations", () => {
                     name: "placed@example.com",
                     password: "newpassword",
                     displayNAme: "placed user",
-                    role: 1,
+                    role: UserRoles.LOCAL_MANAGER,
                     place: place._id
                 });
             expect(res.statusCode).toBe(200);
@@ -338,7 +345,7 @@ describe("Developer User operations", () => {
                     name: "placed2@example.com",
                     displayName: "Placed 2",
                     password: "newpassword",
-                    role: 1,
+                    role: UserRoles.LOCAL_MANAGER,
                     place: "bad"
                 });
             expect(res.statusCode).toBe(400);
@@ -351,7 +358,7 @@ describe("Developer User operations", () => {
                     name: "placed3@example.com",
                     displayName: "Placed 3",
                     password: "newpassword",
-                    role: 1,
+                    role: UserRoles.LOCAL_MANAGER,
                     place: "62af3299da7e181b79af017b"
                 });
             expect(res.statusCode).toBe(404);
@@ -361,11 +368,11 @@ describe("Developer User operations", () => {
 
 describe("Using DEFAULT user", () => {
     beforeAll(async () => {
-        USER.role = 0;
+        USER.role = UserRoles.DEFAULT;
         await USER.save();
     });
     afterAll(async () => {
-        USER.role = 5;
+        USER.role = UserRoles.DEVELOPER;
         await USER.save();
     })
     test("Getting current user details", async () => {
@@ -400,7 +407,7 @@ describe("Using DEFAULT user", () => {
             .send({
                 name: "new user",
                 password: "new password",
-                role: 5
+                role: UserRoles.DEVELOPER
             });
         expect(res.statusCode).toBe(403);
     });
@@ -415,11 +422,11 @@ describe("Using DEFAULT user", () => {
 
 describe("Using LOCAL_ADMIN user", () => {
     beforeAll(async () => {
-        USER.role = 3;
+        USER.role = UserRoles.LOCAL_ADMIN;
         await USER.save();
     });
     afterAll(async () => {
-        USER.role = 5;
+        USER.role = UserRoles.DEVELOPER;
         await USER.save();
     });
     test("Getting current user details", async () => {
@@ -427,7 +434,7 @@ describe("Using LOCAL_ADMIN user", () => {
             .get("/users/@self")
             .set('Cookie', `token=${USER_JWT}`);
         expect(res.statusCode).toBe(200);
-        expect(res.body.role).toBe(3);
+        expect(res.body.role).toBe(UserRoles.LOCAL_ADMIN);
     });
     test("Getting list of all users fails", async () => {
         const res = await request(app.callback())
@@ -442,7 +449,7 @@ describe("Using LOCAL_ADMIN user", () => {
             .send({
                 name: "test@example.com",
                 password: "newpassword",
-                role: 3,
+                role: UserRoles.GLOBAL_MANAGER,
                 place: "5e9f8f8f8f8f8f8f8f8f8f8"
             });
         expect(res.statusCode).toBe(403);
@@ -454,21 +461,34 @@ describe("Using LOCAL_ADMIN user", () => {
             .send({
                 name: "test@example.com",
                 password: "newpassword",
-                role: 4
+                role: UserRoles.GLOBAL_ADMIN
             });
         expect(res.statusCode).toBe(403);
+    });
+    test("Getting list of users in place by id fails", async () => {
+        const res = await request(app.callback())
+            .get(`/places/${PLACE._id}/users`)
+            .set('Cookie', `token=${USER_JWT}`);
+        expect(res.statusCode).toBe(403);
+    });
+    test("Getting list of users in current place returns 2 users", async () => {
+        const res = await request(app.callback())
+            .get("/places/@local/users")
+            .set('Cookie', `token=${USER_JWT}`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.length).toBe(2);
     });
 });
 
 describe("Using GLOBAL_ADMIN user", () => {
     
     beforeAll(async () => {
-        USER.role = 4;
+        USER.role = UserRoles.GLOBAL_ADMIN;
         await USER.save();
     });
 
     afterAll(async () => {
-        USER.role = 5;
+        USER.role = UserRoles.DEVELOPER;
         await USER.save();
     });
 
@@ -535,7 +555,7 @@ test("Creating user fails when not logged in", async () => {
         .send({
             name: "test",
             password: "newpassword",
-            role: 5
+            role: UserRoles.DEVELOPER
         });
     expect(res.statusCode).toBe(401);
 });
