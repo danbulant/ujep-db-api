@@ -327,7 +327,7 @@ describe("Developer User operations", () => {
                 .send({
                     name: "placed@example.com",
                     password: "newpassword",
-                    displayNAme: "placed user",
+                    displayName: "placed user",
                     role: UserRoles.LOCAL_MANAGER,
                     place: place._id
                 });
@@ -336,6 +336,19 @@ describe("Developer User operations", () => {
             expect(res.body.role).toBe(1);
             expect(res.body.place).toBe(place.id);
             userId = res.body._id;
+        });
+        test("Login with new user", async () => {
+            const res = await request(app.callback())
+                .put("/token")
+                .send({
+                    name: "placed@example.com",
+                    password: "newpassword"
+                });
+            expect(res.statusCode).toBe(200);
+            expect(res.body.name).toBe("placed@example.com");
+            expect(res.body.displayName).toBe("placed user");
+            expect(res.body.role).toBe(UserRoles.LOCAL_MANAGER);
+            expect(res.body.place._id).toBe(place.id);
         });
         test("Creating user in another invalid place fails", async () => {
             const res = await request(app.callback())
