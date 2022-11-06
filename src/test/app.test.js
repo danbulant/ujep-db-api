@@ -582,6 +582,14 @@ describe("Pomucky", () => {
             .get(`/pomucky/${pomucka._id}`);
         expect(res.statusCode).toBe(200);
     });
+    test("Pomucka has date", async () => {
+        const res = await request(app.callback())
+            .get(`/pomucky/${pomucka._id}`);
+        expect(res.body.date).toBeDefined();
+        let d = new Date(res.body.date);
+        expect(d).toBeInstanceOf(Date);
+        expect(isNaN(d)).toBe(false);
+    });
     test("Search options", async () => {
         const res = await request(app.callback())
             .get(`/pomucky/searchOptions`);

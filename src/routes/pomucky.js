@@ -63,7 +63,10 @@ router.post('/pomucky', parseBody(), async (ctx) => {
 		}
 	});
 	await add.save();
-	ctx.body = add;
+	ctx.body = {
+		...add.toObject(),
+		date: add._id.getTimestamp()
+	};
 });
 
 /**
@@ -143,7 +146,10 @@ router.get('/pomucky/search', async (ctx) => {
 		query._id = { $in: ctx.query.id };
 	}
 	const docs = await Pomucka.find(query).sort(sort);
-	ctx.body = docs;
+	ctx.body = docs.map(t => ({
+		...t.toObject(),
+		date: t._id.getTimestamp()
+	}));
 });
 
 /**
@@ -159,7 +165,10 @@ router.get("/pomucky/:id", async (ctx) => {
 	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
 	const doc = await Pomucka.findById(ctx.params.id);
 	if (!doc) throw createError(404);
-	ctx.body = doc;
+	ctx.body = {
+		...doc.toObject(),
+		date: doc._id.getTimestamp()
+	};
 });
 
 /**
@@ -213,7 +222,10 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 		doc.categories = body.categories;
 	}
 	await doc.save();
-	ctx.body = doc;
+	ctx.body = {
+		...doc.toObject(),
+		date: doc._id.getTimestamp()
+	};
 });
 
 /**
