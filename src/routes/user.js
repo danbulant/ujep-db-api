@@ -44,8 +44,9 @@ router.put("/token", parseBody(), async (ctx) => {
     const user = await User.findOne({
         name: body.name
     }, {}, { populate: "place" });
-    if (!user) throw createError(404);
-    if (!await bcrypt.compare(body.password, user.password)) throw createError(404);
+    if (!user) throw createError(404, "User not found");
+    const res = await bcrypt.compare(body.password, user.password);
+    if (!res) throw createError(401, "User not found or wrong password");
     const jwt = await new SignJWT({ 'sub': user.id })
         .setProtectedHeader({ alg: 'ES256' })
         .setIssuedAt()
