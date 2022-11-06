@@ -106,7 +106,8 @@ router.post("/places", parseBody(), async (ctx) => {
         name: body.name,
         description: body.description,
         website: body.website,
-        contacts: body.contacts
+        contacts: body.contacts,
+        banner: buf
     });
     await place.save();
     ctx.body = place;
