@@ -44,6 +44,7 @@ router.put("/token", parseBody(), async (ctx) => {
     const user = await User.findOne({
         name: body.name
     }, {}, { populate: "place" });
+    if(!user) console.log("No user found");
     if (!user) throw createError(404, "User not found");
     const res = await bcrypt.compare(body.password, user.password);
     if (!res) throw createError(401, "User not found or wrong password");

@@ -14,11 +14,30 @@ import placeRouter from "./routes/place.js";
 import userRouter from "./routes/user.js";
 import { User } from "./models/user.js";
 import { publicKey } from "./keys.js";
+import { Image } from "./models/image.js";
+import { Instances } from "./models/instances.js";
+import { Pomucka } from "./models/pomucka.js";
+import { Place } from "./models/place.js";
 
 /* istanbul ignore next */
 {
 	const mongoDB = globalThis.__MONGO_URI__ || process.env.MONGODB || 'mongodb://127.0.0.1:27017/ujep';
-	mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });	
+	mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true }, async (err) => {
+		if(err) return console.error(err);
+		const [ users, images, instances, places, pomucky ] = await Promise.all([
+			User.count(),
+			Image.count(),
+			Instances.count(),
+			Place.count(),
+			Pomucka.count()
+		]);
+		console.log(`MongoDB Ready
+			Users: ${users}
+			Images: ${images}
+			Instances: ${instances}
+			Places: ${places}
+			Pomucky: ${pomucky}`.split("\n").map(x => x.trim()).join("\n"));
+	});	
 	mongoose.connection.on('error', console.error.bind(console, 'MongoDB error!'));
 }
 
@@ -40,7 +59,8 @@ app.use(async (ctx, next) => {
 				message: "internal"
 			}
 		}
-		if (ctx.status === 500) console.error(e);
+		//if (ctx.status === 500) console.error(e);
+		console.warn(e);
 	}
 })
 

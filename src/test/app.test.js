@@ -96,7 +96,7 @@ test("Logging in with bad details fails", async () => {
         name: USER.name,
         password: "badpassword"
     });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(401);
 })
 
 test("Logging in with correct details", async () => {
