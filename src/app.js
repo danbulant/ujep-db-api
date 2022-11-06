@@ -56,6 +56,7 @@ app.use(async (ctx, next) => {
 			if(!Array.isArray(ctx.query[key])) {
 				ctx.query[key.replace(/\[\]$/, "")] = [ctx.query[key]];
 			} else {
+				/* istanbul ignore next */
 				ctx.query[key.replace(/\[\]$/, "")] = ctx.query[key];
 			}
 			delete ctx.query[key];
