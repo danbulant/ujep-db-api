@@ -1,6 +1,7 @@
 import Router from '@koa/router';
 import createError from 'http-errors';
 import mongoose from 'mongoose';
+import { Instances } from '../models/instances.js';
 
 import { Place } from '../models/place.js';
 import { UserRoles } from '../models/user.js';
@@ -27,6 +28,53 @@ var router = new Router();
 router.get("/users/@self/place", async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     ctx.body = ctx.state.place;
+});
+
+/**
+ * @typedef LocalStats
+ * @property {number} ownedBy - počet vlastněných instancí
+ * @property {number} currentlyAt - počet instancí, které jsou v daném místě
+ * @property {number} rentedOwned - počet instancí, které jsou vypůjčené, a zároveň jsou vlastněné
+ * @property {number} rentedCurrentlyAt - počet instancí, které jsou vypůjčené, a zároveň jsou v daném místě
+ */
+
+/**
+ * GET /users/@self/place/stats
+ * 
+ * Zobrazí statistiky o místě kam patří přihlášený uživatel
+ * 
+ * @auth
+ * @response
+ * @property {number} globalInstanceCount
+ * @property {LocalStats} local
+ */
+router.get("/users/@self/place/stats", async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
+    ctx.body = {
+        local: {
+            ownedBy: await Instances.count({ ownedBy: ctx.state.place._id }),
+            currentlyAt: await Instances.count({ currentlyAt: ctx.state.place._id }),
+            rentedOwned: await Instances.count({ rentedBy: { $exists: true }, ownedBy: ctx.state.place._id }),
+            rentedCurrentlyAt: await Instances.count({ rentedBy: { $exists: true }, currentlyAt: ctx.state.place._id })
+        },
+        globalInstanceCount: await Instances.count(),
+        globalInstanceRentedCount: await Instances.count({ rentedBy: { $exists: true } })
+    };
+});
+
+/**
+ * GET /stats
+ * 
+ * Zobrazí statistiky o všech místech
+ * 
+ * @response
+ *  @property {number} globalInstanceCount - celkový počet všech instancí
+ */
+router.get("/stats", async (ctx) => {
+    ctx.body = {
+        globalInstanceCount: await Instances.count(),
+        globalInstanceRentedCount: await Instances.count({ rentedBy: { $exists: true } })
+    }
 });
 
 /**
