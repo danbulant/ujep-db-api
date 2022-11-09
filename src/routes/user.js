@@ -280,4 +280,14 @@ router.get("/users", async (ctx) => {
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 
+router.delete("/users/:id", async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
+    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
+    if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+    const user = await User.findById(ctx.params.id);
+    if(!user) throw createError.NotFound("user_not_found");
+    await user.remove();
+    ctx.body = {};
+});
+
 export default router;

@@ -27,9 +27,43 @@ var router = new Router();
  * 
  * @response {Instance}
  */
+
+
+ router.get("/instances", async (ctx) => {
+    if(!ctx.state.user) throw createError(401);
+    const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+    ctx.body = instances.map(instance => {
+        if(instance.ownedBy) instance.ownedBy.banner = null;
+        if(instance.currentlyAt) instance.ownedBy.banner = null;
+        return {
+            pomucka: instance.pomucka,
+            ownedBy: instance.ownedBy,
+            currentlyAt: instance.currentlyAt,
+            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
+        };
+    });
+});
+
+ router.get("/instances/@local", async (ctx) => {
+    if(!ctx.state.user) throw createError(401);
+    const instances = await Instances.find({
+        currentlyAt: ctx.state.place.id
+    }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+    ctx.body = instances.map(instance => {
+        if(instance.ownedBy) instance.ownedBy.banner = null;
+        if(instance.currentlyAt) instance.ownedBy.banner = null;
+        return {
+            pomucka: instance.pomucka,
+            ownedBy: instance.ownedBy,
+            currentlyAt: instance.currentlyAt,
+            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
+        };
+    });
+});
+
 router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
-    const pomucka = await Pomucka.find({
+    const pomucka = await Pomucka.findById({
         _id: ctx.params.id
     });
     if (!pomucka) throw createError(404);
@@ -39,7 +73,7 @@ router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
         place = await Place.findById(ctx.query.place);
         if (!place) throw createError(404, "place_not_found");
     }
-    const instance = new Instance({
+    const instance = new Instances({
         pomucka,
         ownedBy: place,
         currentlyAt: place
@@ -150,5 +184,8 @@ router.put("/instances/:id", parseBody(), async (ctx) => {
 
     ctx.body = instance;
 });
+
+
+
 
 export default router;
