@@ -17,6 +17,39 @@ var router = new Router();
  * @property {{ name: string, identifier: string }} [rentedBy] - kdo má instanci vypůjčenou
  */
 
+
+router.get("/instances", async (ctx) => {
+    if(!ctx.state.user) throw createError(401);
+    const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+    ctx.body = instances.map(instance => {
+        if(instance.ownedBy) instance.ownedBy.banner = undefined;
+        if(instance.currentlyAt) instance.ownedBy.banner = undefined;
+        return {
+            pomucka: instance.pomucka,
+            ownedBy: instance.ownedBy,
+            currentlyAt: instance.currentlyAt,
+            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
+        };
+    });
+});
+
+router.get("/instances/@local", async (ctx) => {
+    if(!ctx.state.user) throw createError(401);
+    const instances = await Instances.find({
+        currentlyAt: ctx.state.place.id
+    }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+    ctx.body = instances.map(instance => {
+        if(instance.ownedBy) instance.ownedBy.banner = undefined;
+        if(instance.currentlyAt) instance.ownedBy.banner = undefined;
+        return {
+            pomucka: instance.pomucka,
+            ownedBy: instance.ownedBy,
+            currentlyAt: instance.currentlyAt,
+            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
+        };
+    });
+});
+
 /**
  * POST /pomucky/:id/instances
  * 
@@ -27,40 +60,6 @@ var router = new Router();
  * 
  * @response {Instance}
  */
-
-
- router.get("/instances", async (ctx) => {
-    if(!ctx.state.user) throw createError(401);
-    const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
-    ctx.body = instances.map(instance => {
-        if(instance.ownedBy) instance.ownedBy.banner = null;
-        if(instance.currentlyAt) instance.ownedBy.banner = null;
-        return {
-            pomucka: instance.pomucka,
-            ownedBy: instance.ownedBy,
-            currentlyAt: instance.currentlyAt,
-            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
-        };
-    });
-});
-
- router.get("/instances/@local", async (ctx) => {
-    if(!ctx.state.user) throw createError(401);
-    const instances = await Instances.find({
-        currentlyAt: ctx.state.place.id
-    }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
-    ctx.body = instances.map(instance => {
-        if(instance.ownedBy) instance.ownedBy.banner = null;
-        if(instance.currentlyAt) instance.ownedBy.banner = null;
-        return {
-            pomucka: instance.pomucka,
-            ownedBy: instance.ownedBy,
-            currentlyAt: instance.currentlyAt,
-            rentedBy: (ctx.state.user >= UserRoles.GLOBAL_MANAGER || instance.currentlyAt === ctx.state.place.id) ? instance.rentedBy : !!instance.rentedBy
-        };
-    });
-});
-
 router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
     if (!ctx.state.user) throw createError(401);
     const pomucka = await Pomucka.findById({
