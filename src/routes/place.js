@@ -122,6 +122,31 @@ router.get("/places", async (ctx) => {
 });
 
 /**
+ * GET /places/@self/banner
+ * 
+ * Získá banner místa.
+ * Dá se dát přímo jako src v img tagu
+ */
+router.get("/places/@self/banner", async (ctx) => {
+    if (!ctx.state.user) throw createError(401);
+    ctx.body = ctx.state.place.banner.data;
+    ctx.type = ctx.state.place.banner.mimetype;
+});
+
+/**
+ * GET /places/:id/banner
+ * 
+ * Získá banner místa.
+ * Dá se dát přímo jako src v img tagu
+ */
+router.get("/places/:id/banner", async (ctx) => {
+    const place = await Place.findById(ctx.params.id);
+    if (!place) throw createError(404);
+    ctx.body = place.banner.data;
+    ctx.type = place.banner.mimetype;
+});
+
+/**
  * POST /places
  * 
  * Vytvoří nové místo
