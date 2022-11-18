@@ -38,16 +38,15 @@ var router = new Router();
  */
 router.put("/token", parseBody(), async (ctx) => {
     const body = ctx.request.body;
-    if (!body || typeof body === "string") throw createError(400);
-    if (typeof body.name !== "string") throw createError(400);
-    if (typeof body.password !== "string") throw createError(400);
+    if (!body || typeof body === "string") throw createError(400, "invalid_body");
+    if (typeof body.name !== "string") throw createError(400, "invalid_body", { key: "name", err: "invalid_type" });
+    if (typeof body.password !== "string") throw createError(400, "invalid_body", { key: "password", err: "invalid_type" });
     const user = await User.findOne({
         name: body.name
     }, {}, { populate: "place" });
-    if(!user) console.log("No user found");
-    if (!user) throw createError(404, "User not found");
+    if (!user) throw createError(404, "not_found");
     const res = await bcrypt.compare(body.password, user.password);
-    if (!res) throw createError(401, "User not found or wrong password");
+    if (!res) throw createError(404, "not_found");
     const jwt = await new SignJWT({ 'sub': user.id })
         .setProtectedHeader({ alg: 'ES256' })
         .setIssuedAt()
@@ -95,24 +94,24 @@ router.delete("/token", async (ctx) => {
  * @response {User}
  */
 router.post("/users", parseBody(), async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403, "not_authorized");
     const body = ctx.request.body;
     if (!body || typeof body === "string") throw createError(400);
-    if (!body.role || typeof body.role !== "number") throw createError(400, "Role is required");
+    if (!body.role || typeof body.role !== "number") throw createError(400, "invalid_body", { key: "role", err: "invalid_type" });
     body.role = Math.round(body.role);
-    if (!body.name || typeof body.name !== "string" || !body.name.includes("@") || body.name.length < 2 || body.name.length > 256) throw createError(400, "Invalid name");
-    if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400, "Invalid password");
+    if (!body.name || typeof body.name !== "string" || !body.name.includes("@") || body.name.length < 2 || body.name.length > 256) throw createError(400, "invalid_body", { key: "name", err: "invalid_value" });
+    if (!body.password || typeof body.password !== "string" || body.password.length < 6 || body.password.length > 72) throw createError(400, "invalid_body", { key: "password", err: "invalid_value" });
     if (!body.displayName) body.displayName = body.name;
-    if (!body.displayName || typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError(400, "Invalid displayName");
+    if (!body.displayName || typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError(400, "invalid_body", { key: "displayName", err: "invalid_value" });
     if (body.place && body.place !== ctx.state.place.id) {
-        if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
-        if(!mongoose.isValidObjectId(body.place)) throw createError(400);
+        if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
+        if(!mongoose.isValidObjectId(body.place)) throw createError(400, "invalid_body", { key: "place", err: "invalid_value" });
         let place = await Place.findById(body.place);
-        if(!place) throw createError.NotFound("place_not_found");
+        if(!place) throw createError(404, "place_not_found", { key: "place", err: "not_found" });
     }
-    if (body.role < UserRoles.USER) throw createError(400, "Invalid role");
-    if (body.role > ctx.state.role) throw createError(403, "Cannot create higher role");
+    if (body.role < UserRoles.USER) throw createError(400, "invalid_body", { key: "role", err: "invalid_value" });
+    if (body.role > ctx.state.role) throw createError(403, "not_authorized", { key: "role", err: "invalid_value" });
     const user = new User({
         name: body.name,
         displayName: body.displayName,
@@ -145,21 +144,21 @@ router.post("/users", parseBody(), async (ctx) => {
  * @response {User}
  */
 router.put("/users/@self", parseBody(), async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     const body = ctx.request.body;
-    if (!body || typeof body === "string") throw createError(400);
+    if (!body || typeof body === "string") throw createError(400, "invalid_body");
 
     const user = ctx.state.user;
 
     if (body.newPassword) {
-        if (typeof body.newPassword !== "string" || body.newPassword.length < 6 || body.newPassword.length > 72) throw createError.BadRequest("invalid_password");
-        if (user.forceChangePassword && await bcrypt.compare(body.newPassword, user.password)) throw createError.BadRequest("password_not_changed");
-        if (typeof body.oldPassword !== "string" || !await bcrypt.compare(body.oldPassword, user.password)) throw createError.BadRequest("wrong_password");
+        if (typeof body.newPassword !== "string" || body.newPassword.length < 6 || body.newPassword.length > 72) throw createError(400, "invalid_body", { key: "newPassword", err: "invalid_value" });
+        if (user.forceChangePassword && await bcrypt.compare(body.newPassword, user.password)) throw createError(400, "invalid_body", { key: "newPassword", err: "invalid_value" });
+        if (typeof body.oldPassword !== "string" || !await bcrypt.compare(body.oldPassword, user.password)) throw createError(400, "invalid_body", { key: "oldPassword", err: "invalid_value" });
         user.password = await bcrypt.hash(body.newPassword, 10);
         user.forceChangePassword = false;
     }
     if (body.displayName) {
-        if (typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError.BadRequest("invalid_display_name");
+        if (typeof body.displayName !== "string" || body.displayName.length < 1 || body.displayName.length > 256) throw createError(400, "invalid_body", { key: "displayName", err: "invalid_value" });
         user.displayName = body.displayName;
     }
 
@@ -187,7 +186,7 @@ router.put("/users/@self", parseBody(), async (ctx) => {
  * @response {User}
  */
 router.get("/users/@self", async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     const user = ctx.state.user;
 
     ctx.body = {
@@ -213,12 +212,12 @@ router.get("/users/@self", async (ctx) => {
  * @response {User}
  */
  router.get("/users/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403, "not_authorized");
     const user = await User.findById(ctx.params.id, {}, { populate: "place" });
-    if (!user) throw createError(404);
-    if (user.place.id !== ctx.state.place.id && ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+    if (!user) throw createError(404, "not_found");
+    if (user.place.id !== ctx.state.place.id && ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 
     ctx.body = {
         _id: user.id,
@@ -239,8 +238,8 @@ router.get("/users/@self", async (ctx) => {
  * @response {User[]}
  */
 router.get("/places/@local/users", async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.LOCAL_MANAGER) throw createError(403);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.LOCAL_MANAGER) throw createError(403, "not_authorized");
     const users = await User.find({ place: ctx.state.place.id });
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
@@ -255,11 +254,11 @@ router.get("/places/@local/users", async (ctx) => {
  * @response {User[]}
  */
 router.get("/places/:id/users", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.GLOBAL_MANAGER) throw createError(403);
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.GLOBAL_MANAGER) throw createError(403, "not_authorized");
     const place = await Place.findById(ctx.params.id);
-    if (!place) throw createError(404);
+    if (!place) throw createError(404, "not_found");
     const users = await User.find({ place: place.id });
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
@@ -274,18 +273,18 @@ router.get("/places/:id/users", async (ctx) => {
  * @response {User[]}
  */
 router.get("/users", async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
     const users = await User.find();
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 
 router.delete("/users/:id", async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
-    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403);
-    if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+    if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403, "not_authorized");
+    if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
     const user = await User.findById(ctx.params.id);
-    if(!user) throw createError.NotFound("user_not_found");
+    if(!user) throw createError(404, "user_not_found");
     await user.remove();
     ctx.body = {};
 });

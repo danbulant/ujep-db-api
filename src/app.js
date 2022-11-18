@@ -59,6 +59,9 @@ app.use(async (ctx, next) => {
 				message: "internal"
 			}
 		}
+		if(e.key) ctx.body.key = e.key;
+		if(e.err) ctx.body.err = e.err;
+		if(e.details) ctx.body.details = e.details;
 		//if (ctx.status === 500) console.error(e);
 		console.warn(e);
 	}

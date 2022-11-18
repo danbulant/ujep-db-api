@@ -19,7 +19,7 @@ var router = new Router();
 
 
 router.get("/instances", async (ctx) => {
-    if(!ctx.state.user) throw createError(401);
+    if(!ctx.state.user) throw createError(401, "user_not_logged_in");
     const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
     ctx.body = instances.map(instance => {
         if(instance.ownedBy) instance.ownedBy.banner = undefined;
@@ -34,7 +34,7 @@ router.get("/instances", async (ctx) => {
 });
 
 router.get("/instances/@local", async (ctx) => {
-    if(!ctx.state.user) throw createError(401);
+    if(!ctx.state.user) throw createError(401, "user_not_logged_in");
     const instances = await Instances.find({
         currentlyAt: ctx.state.place.id
     }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
@@ -61,11 +61,11 @@ router.get("/instances/@local", async (ctx) => {
  * @response {Instance}
  */
 router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     const pomucka = await Pomucka.findById({
         _id: ctx.params.id
     });
-    if (!pomucka) throw createError(404);
+    if (!pomucka) throw createError(404, "pomucka_not_found");
     let place = ctx.state.place;
     if (ctx.query.place) {
         if (ctx.state.role < UserRoles.GLOBAL_MANAGER) throw createError(403, "insufficient_role");
@@ -97,7 +97,7 @@ router.get("/pomucky/:id/instances", async (ctx) => {
     const pomucka = await Pomucka.find({
         _id: ctx.params.id
     });
-    if (!pomucka) throw createError(404);
+    if (!pomucka) throw createError(404, "pomucka_not_found");
     const instances = await Instances.find({
         pomucka: pomucka
     });
@@ -157,25 +157,25 @@ router.get("/instances/:id", async (ctx) => {
  * @response {Instance}
  */
 router.put("/instances/:id", parseBody(), async (ctx) => {
-    if (!ctx.state.user) throw createError(401);
+    if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     const body = ctx.request.body;
-    if (!body || typeof body === "string") throw createError(400);
+    if (!body || typeof body === "string") throw createError(400, "invalid_body");
 
     const instance = await Instances.find({
         _id: ctx.params.id
     }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
 
     if (ctx.state.place.id !== instance.ownedBy.id && ctx.state.place.id !== instance.currentlyAt.id && ctx.state.role < UserRoles.GLOBAL_MANAGER)
-        throw createError(403)
+        throw createError(403, "insufficient_role");
 
     if (body.currentlyAt) {
         const newPlace = await Place.findById(body.currentlyAt);
-        if (!newPlace) throw createError(404);
+        if (!newPlace) throw createError(404, "not_found", { key: "currentlyAt", err: "not_found" });
         instance.currentlyAt = newPlace;
     }
     if (body.rentedBy) {
-        if (typeof body.rentedBy.name !== 'string') throw createError(400);
-        if (typeof body.rentedBy.identifier !== 'string') throw createError(400);
+        if (typeof body.rentedBy.name !== 'string') throw createError(400, "invalid_body", { key: "rentedBy.name", err: "invalid_type" });
+        if (typeof body.rentedBy.identifier !== 'string') throw createError(400, "invalid_body", { key: "rentedBy.identifier", err: "invalid_type" });
         instance.rentedBy = { name: body.rentedBy.name, identifier: body.rentedBy.identifier };
     }
 

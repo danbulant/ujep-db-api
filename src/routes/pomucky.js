@@ -47,9 +47,9 @@ var router = new Router();
  */
 
 router.post('/pomucky', parseBody(), async (ctx) => {
-	if (!ctx.state.user) throw createError(401);
-	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
-	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400);
+	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
+	if (typeof ctx.request.body == "string" || !ctx.request.body) throw createError(400, "invalid_body");
 	const body = ctx.request.body;
 	var add = new Pomucka({
 		name: body.name.trim(),
@@ -162,9 +162,9 @@ router.get('/pomucky/search', async (ctx) => {
  * @response {Pomucka}
  */
 router.get("/pomucky/:id", async (ctx) => {
-	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400);
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if (!doc) throw createError(404);
+	if (!doc) throw createError(404, "not_found");
 	ctx.body = {
 		...doc.toObject(),
 		date: doc._id.getTimestamp()
@@ -186,14 +186,14 @@ router.get("/pomucky/:id", async (ctx) => {
  * @response {Pomucka}
  */
 router.put("/pomucky/:id", parseBody(), async (ctx) => {
-	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-	if (!ctx.state.user) throw createError(401);
-	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 	const doc = Pomucka.find({
 		_id: ctx.params.id
 	});
-	if (!doc) throw createError(404);
-	if (typeof ctx.request.body === "string") throw createError(401);
+	if (!doc) throw createError(404, "not_found");
+	if (typeof ctx.request.body === "string") throw createError(401, "invalid_body");
 	/** @type {Partial<Pomucka>} */
 	const body = ctx.request.body;
 	if (!doc.details) doc.details = {};
@@ -244,23 +244,23 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
  * @request {{ alt: String, data: String, mimetype: String }}
  */
 router.put("/pomucky/:id/images", bodyParser({ text: false, multipart: false, json: true, urlencoded: false, jsonLimit: "10mb" }), async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-	if (!ctx.state.user) throw createError(401);
-	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if(!doc) throw createError(404);
+	if(!doc) throw createError(404, "not_found");
 	const alt = ctx.request.body.alt;
-	if(typeof alt !== "string") throw createError(400);
+	if(typeof alt !== "string") throw createError(400, "invalid_body", { key: "alt", err: "invalid_type" });
 	const mimetype = ctx.request.body.mimetype;
-	if(typeof mimetype !== "string") throw createError(400);
-	if(["image/jpeg", "image/png", "image/gif", "image/webp"].indexOf(mimetype) === -1) throw createError(400);
+	if(typeof mimetype !== "string") throw createError(400, "invalid_body", { key: "mimetype", err: "invalid_type" });
+	if(["image/jpeg", "image/png", "image/gif", "image/webp"].indexOf(mimetype) === -1) throw createError(400, "invalid_body", { key: "mimetype", err: "invalid_value" });
 	const data = ctx.request.body.data;
 	if(typeof data !== "string") throw createError(400);
 	let buffer;
 	try {
 		buffer = Buffer.from(data, "base64");
 	} catch(e) {
-		throw createError(400);
+		throw createError(400, "invalid_body", { key: "data", err: "invalid_value", details: "Couldn't decode base64 into image." });
 	}
 
 	let image = await Image.create({
@@ -283,15 +283,15 @@ router.put("/pomucky/:id/images", bodyParser({ text: false, multipart: false, js
  * 
  */
 router.delete("/pomucky/:id/images/:imageId", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-	if (!ctx.state.user) throw createError(401);
-	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if(!doc) throw createError(404);
-	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	if(!doc) throw createError(404, "not_found");
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404, "not_found");
 	const image = await Image.findById(ctx.params.imageId);
-	if(!image) throw createError(404);
-	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	if(!image) throw createError(404, "not_found");
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404, "not_found");
 	await image.deleteOne();
 	ctx.body = { ok: true };
 });
@@ -306,9 +306,9 @@ router.delete("/pomucky/:id/images/:imageId", async (ctx) => {
  * @response {MinimalImage[]}
  */
 router.get("/pomucky/:id/images", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if(!doc) throw createError(404);
+	if(!doc) throw createError(404, "not_found");
 	const images = await Image.find({ pomucka: doc._id });
 	ctx.body = images.map(t => ({ 
 		_id: t._id,
@@ -328,13 +328,13 @@ router.get("/pomucky/:id/images", async (ctx) => {
  * @response {Image}
  */
 router.get("/pomucky/:id/images/:imageId", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if(!doc) throw createError(404);
-	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	if(!doc) throw createError(404, "not_found");
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404, "not_found");
 	const image = await Image.findById(ctx.params.imageId);
-	if(!image) throw createError(404);
-	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	if(!image) throw createError(404, "not_found");
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404, "not_found");
 	ctx.body = image;
 });
 
@@ -347,13 +347,13 @@ router.get("/pomucky/:id/images/:imageId", async (ctx) => {
  * @param imageId - přesné ID (_id) obrázku
  */
 router.get("/pomucky/:id/images/:imageId/data", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const doc = await Pomucka.findById(ctx.params.id);
-	if(!doc) throw createError(404);
-	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404);
+	if(!doc) throw createError(404, "not_found");
+	if(!mongoose.isValidObjectId(ctx.params.imageId)) throw createError(404, "not_found");
 	const image = await Image.findById(ctx.params.imageId);
-	if(!image) throw createError(404);
-	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404);
+	if(!image) throw createError(404, "not_found");
+	if(image.pomucka.toString() !== doc._id.toString()) throw createError(404, "not_found");
 	ctx.body = image.data;
 	ctx.type = image.mimetype;
 });
@@ -364,9 +364,9 @@ router.get("/pomucky/:id/images/:imageId/data", async (ctx) => {
  * Dá redirect na plnohodnotnou URL pro informace o obrázku.
  */
 router.get("/images/:id", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const image = await Image.findById(ctx.params.id);
-	if(!image) throw createError(404);
+	if(!image) throw createError(404, "not_found");
 	ctx.redirect(`/api/v1/pomucky/${image.pomucka}/images/${image._id}`);
 });
 
@@ -376,9 +376,9 @@ router.get("/images/:id", async (ctx) => {
  * Dá redirect na plnohodnotnou URL pro data obrázku.
  */
 router.get("/images/:id/data", async (ctx) => {
-	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
+	if(!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	const image = await Image.findById(ctx.params.id);
-	if(!image) throw createError(404);
+	if(!image) throw createError(404, "not_found");
 	ctx.redirect(`/api/v1/pomucky/${image.pomucka}/images/${image._id}/data`);
 });
 
@@ -394,13 +394,13 @@ router.get("/images/:id/data", async (ctx) => {
  * @response {Pomucka}
  */
 router.delete("/pomucky/:id", async (ctx) => {
-	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404);
-	if (!ctx.state.user) throw createError(401);
-	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403);
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+	if (!ctx.state.user) throw createError(401, "user_logged_in");
+	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 	const doc = Pomucka.find({
 		_id: ctx.params.id
 	});
-	if (!doc) throw createError(404);
+	if (!doc) throw createError(404, "not_found");
 	ctx.body = await doc.deleteOne();
 });
 
