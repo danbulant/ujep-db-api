@@ -12,7 +12,11 @@ var pomuckaSchema = new mongoose.Schema({
 		author: String,
 		year: Number,
 		mistoVydani: String
-	}
+	},
+	links: [{
+		description: String,
+		url: String
+	}]
 })
 
 pomuckaSchema.index({
@@ -22,7 +26,8 @@ pomuckaSchema.index({
 	"details.author": "text",
 	"details.mistoVydani": "text",
 	"details.year": "text",
-	"details.company": "text"
+	"details.company": "text",
+	"links.description": "text"
 }, {
 	weights: {
 		name: 10,

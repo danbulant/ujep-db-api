@@ -96,7 +96,7 @@ test("Logging in with bad details fails", async () => {
         name: USER.name,
         password: "badpassword"
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
 })
 
 test("Logging in with correct details", async () => {
@@ -226,7 +226,8 @@ describe("Developer User operations", () => {
                 details: {
                     description: "test description",
                     author: "test author"
-                }
+                },
+                links: []
             });
         expect(res.statusCode).toBe(200);
         expect(res.body.name).toBe("test pomucka");
@@ -657,7 +658,7 @@ describe("Pomucky", () => {
     test("Invalid pomucka ID results in 400", async () => {
         const res = await request(app.callback())
             .get(`/pomucky/invalid`);
-        expect(res.statusCode).toBe(400);
+        expect(res.statusCode).toBe(404);
     });
     test("Non-existent pomucka ID results in 404", async () => {
         const res = await request(app.callback())

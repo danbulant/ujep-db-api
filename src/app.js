@@ -62,8 +62,8 @@ app.use(async (ctx, next) => {
 		if(e.key) ctx.body.key = e.key;
 		if(e.err) ctx.body.err = e.err;
 		if(e.details) ctx.body.details = e.details;
-		//if (ctx.status === 500) console.error(e);
-		console.warn(e);
+		if (ctx.status === 500) console.error(e);
+		console.debug(ctx.body);
 	}
 })
 

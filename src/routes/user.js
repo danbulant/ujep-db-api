@@ -212,7 +212,7 @@ router.get("/users/@self", async (ctx) => {
  * @response {User}
  */
  router.get("/users/:id", async (ctx) => {
-    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+    if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400, "not_found");
     if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     if (ctx.state.role < UserRoles.LOCAL_ADMIN) throw createError(403, "not_authorized");
     const user = await User.findById(ctx.params.id, {}, { populate: "place" });
@@ -275,7 +275,11 @@ router.get("/places/:id/users", async (ctx) => {
 router.get("/users", async (ctx) => {
     if (!ctx.state.user) throw createError(401, "user_not_logged_in");
     if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
-    const users = await User.find();
+	let page = parseInt(ctx.query.page) || 0;
+	let limit = parseInt(ctx.query.limit) || 100;
+	if(page < 0) throw createError(400, "invalid_page");
+	if(limit < 1 || limit > 200) throw createError(400, "invalid_limit");
+    const users = await User.find().skip(page * limit).limit(limit);
     ctx.body = users.map(user => ({ _id: user.id, name: user.name, displayName: user.displayName, role: user.role, place: user.place }));
 });
 

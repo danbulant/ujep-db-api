@@ -20,7 +20,11 @@ var router = new Router();
 
 router.get("/instances", async (ctx) => {
     if(!ctx.state.user) throw createError(401, "user_not_logged_in");
-    const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+	let page = parseInt(ctx.query.page) || 0;
+	let limit = parseInt(ctx.query.limit) || 100;
+	if(page < 0) throw createError(400, "invalid_page");
+	if(limit < 1 || limit > 200) throw createError(400, "invalid_limit");
+    const instances = await Instances.find({}, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] }).skip(page * limit).limit(limit);
     ctx.body = instances.map(instance => {
         if(instance.ownedBy) instance.ownedBy.banner = undefined;
         if(instance.currentlyAt) instance.ownedBy.banner = undefined;
@@ -35,9 +39,13 @@ router.get("/instances", async (ctx) => {
 
 router.get("/instances/@local", async (ctx) => {
     if(!ctx.state.user) throw createError(401, "user_not_logged_in");
+	let page = parseInt(ctx.query.page) || 0;
+	let limit = parseInt(ctx.query.limit) || 100;
+	if(page < 0) throw createError(400, "invalid_page");
+	if(limit < 1 || limit > 200) throw createError(400, "invalid_limit");
     const instances = await Instances.find({
         currentlyAt: ctx.state.place.id
-    }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
+    }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] }).skip(page * limit).limit(limit);
     ctx.body = instances.map(instance => {
         if(instance.ownedBy) instance.ownedBy.banner = undefined;
         if(instance.currentlyAt) instance.ownedBy.banner = undefined;
@@ -94,13 +102,17 @@ router.post('/pomucky/:id/instances', parseBody(), async (ctx) => {
  *  @property {Pomucka} pomucka - informace o pomůcce
  */
 router.get("/pomucky/:id/instances", async (ctx) => {
+	let page = parseInt(ctx.query.page) || 0;
+	let limit = parseInt(ctx.query.limit) || 100;
+	if(page < 0) throw createError(400, "invalid_page");
+	if(limit < 1 || limit > 200) throw createError(400, "invalid_limit");
     const pomucka = await Pomucka.find({
         _id: ctx.params.id
     });
     if (!pomucka) throw createError(404, "pomucka_not_found");
     const instances = await Instances.find({
         pomucka: pomucka
-    });
+    }).skip(page * limit).limit(limit);
     const places = await Place.find({
         _id: {
             $in: instances.map(t => [t.ownedBy, t.currentlyAt]).flat().filter((v, i, a) => a.indexOf(v) === i)
@@ -133,7 +145,7 @@ router.get("/pomucky/:id/instances", async (ctx) => {
  * @response {Instance}
  */
 router.get("/instances/:id", async (ctx) => {
-    const instance = await Instances.find({
+    const instance = await Instances.findOne({
         _id: ctx.params.id
     }, {}, { populate: ["pomucka", "ownedBy", "currentlyAt"] });
     ctx.body = {
@@ -183,8 +195,6 @@ router.put("/instances/:id", parseBody(), async (ctx) => {
 
     ctx.body = instance;
 });
-
-
 
 
 export default router;

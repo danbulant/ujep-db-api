@@ -18,6 +18,7 @@ var router = new Router();
  * @property {string} ISXN
  * @property {string[]} kategorie
  * @property {{ author: string, year: string, company: string, mistoVydani: string }} details
+ * @property {{ description: string, url: string }[]} links
  */
 
 /**
@@ -60,7 +61,11 @@ router.post('/pomucky', parseBody(), async (ctx) => {
 			year: parseInt(body.details.year) || null,
 			company: body.details.company?.trim() || null,
 			description: body.details.description?.trim() || null
-		}
+		},
+		links: body.links?.map(t => ({
+			description: t.description,
+			url: t.url
+		})) || []
 	});
 	await add.save();
 	ctx.body = {
@@ -109,6 +114,10 @@ router.get("/pomucky/searchOptions", async (ctx) => {
  * @response {Pomucka[]}
  */
 router.get('/pomucky/search', async (ctx) => {
+	let page = parseInt(ctx.query.page) || 0;
+	let limit = parseInt(ctx.query.limit) || 100;
+	if(page < 0) throw createError(400, "invalid_page");
+	if(limit < 1 || limit > 200) throw createError(400, "invalid_limit");
 	const query = {};
 	let sort;
 	if (typeof ctx.query.name === "string") {
@@ -145,11 +154,31 @@ router.get('/pomucky/search', async (ctx) => {
 	if (Array.isArray(ctx.query.id) && ctx.query.id.every(t => typeof t === "string")) {
 		query._id = { $in: ctx.query.id };
 	}
-	const docs = await Pomucka.find(query).sort(sort);
-	ctx.body = docs.map(t => ({
-		...t.toObject(),
-		date: t._id.getTimestamp()
-	}));
+	const docs = await Pomucka.find(query).sort(sort).skip(page * limit).limit(limit);
+
+	const [
+		authors,
+		years,
+		companies,
+		mistaVydani,
+		categories
+	] = await Promise.all([
+		Pomucka.distinct("details.author", query),
+		Pomucka.distinct("details.year", query),
+		Pomucka.distinct("details.company", query),
+		Pomucka.distinct("details.mistoVydani", query),
+		Pomucka.distinct("categories", query)
+	]);
+
+	ctx.body = {
+		results: docs.map(t => ({
+			...t.toObject(),
+			date: t._id.getTimestamp()
+		})),
+		options: {
+			authors, years, companies, mistaVydani, categories
+		}
+	};
 });
 
 /**
@@ -220,6 +249,9 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	}
 	if (Array.isArray(body.categories) && body.categories.findIndex(t => typeof t !== "string") === -1) {
 		doc.categories = body.categories;
+	}
+	if(Array.isArray(body.links) && body.links.findIndex(t => typeof t !== "object" || typeof t.url !== "string" || typeof t.description !== "string" || !t.url.startsWith("https://")) === -1) {
+		doc.links = body.links;
 	}
 	await doc.save();
 	ctx.body = {
@@ -394,7 +426,7 @@ router.get("/images/:id/data", async (ctx) => {
  * @response {Pomucka}
  */
 router.delete("/pomucky/:id", async (ctx) => {
-	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
+	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(400, "not_found");
 	if (!ctx.state.user) throw createError(401, "user_logged_in");
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
 	const doc = Pomucka.find({
