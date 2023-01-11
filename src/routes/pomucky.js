@@ -218,9 +218,7 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
-	const doc = Pomucka.findOne({
-		_id: ctx.params.id
-	});
+	const doc = await Pomucka.findById(ctx.params.id);
 	if (!doc) throw createError(404, "not_found");
 	if (typeof ctx.request.body === "string") throw createError(401, "invalid_body");
 	/** @type {Partial<Pomucka>} */
@@ -253,7 +251,7 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	if(Array.isArray(body.links) && body.links.findIndex(t => typeof t !== "object" || typeof t.url !== "string" || typeof t.description !== "string" || !t.url.startsWith("https://")) === -1) {
 		doc.links = body.links;
 	}
-	await doc.updateOne();
+	await doc.save();
 	ctx.body = {
 		...doc.toObject(),
 		date: doc._id.getTimestamp()
