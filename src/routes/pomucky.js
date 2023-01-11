@@ -218,7 +218,7 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	if (!mongoose.isValidObjectId(ctx.params.id)) throw createError(404, "not_found");
 	if (!ctx.state.user) throw createError(401, "user_not_logged_in");
 	if (ctx.state.role < UserRoles.GLOBAL_ADMIN) throw createError(403, "not_authorized");
-	const doc = Pomucka.find({
+	const doc = Pomucka.findOne({
 		_id: ctx.params.id
 	});
 	if (!doc) throw createError(404, "not_found");
