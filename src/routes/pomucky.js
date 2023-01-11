@@ -253,7 +253,7 @@ router.put("/pomucky/:id", parseBody(), async (ctx) => {
 	if(Array.isArray(body.links) && body.links.findIndex(t => typeof t !== "object" || typeof t.url !== "string" || typeof t.description !== "string" || !t.url.startsWith("https://")) === -1) {
 		doc.links = body.links;
 	}
-	await doc.save();
+	await doc.updateOne();
 	ctx.body = {
 		...doc.toObject(),
 		date: doc._id.getTimestamp()
